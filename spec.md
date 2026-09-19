@@ -1,6 +1,6 @@
 # Project Spec: EpiClim — Climate-Health EDA & Modeling
 
-> **Status:** Draft / brainstorming phase — data cleaning & imputation pipeline in place
+> **Status:** Draft / brainstorming phase — data cleaning, imputation, and EDA plotting pass complete; see `EDA_FINDINGS.md` for the full plot-by-plot writeup
 > **Course context:** Project 1 of 4 for this course
 > **Last updated:** 2026-09-19
 
@@ -32,7 +32,7 @@ This is a living document. Update it as decisions get made — don't let it drif
 | **DOI** | 10.5281/zenodo.14580510 (v1, published 2024-12-31) |
 | **Zenodo record** | https://zenodo.org/records/14580510 |
 | **Local copy** | `data/Final_data.csv` (downloaded, confirmed 8,985 rows + header, columns match spec) |
-| **Derived files** | `data/Final_data_cleaned.csv`, `data/Final_data_imputed.csv`, `data/dataset_profile.md`, `data/correlation_heatmap.png` — all regenerated from the raw file by `scripts/01`–`04` (gitignored, not committed) |
+| **Derived files** | `data/Final_data_cleaned.csv`, `data/Final_data_imputed.csv`, plus a `dataset_profile.md` and ~13 EDA plot PNGs in `data/` — all regenerated from the raw file by `scripts/01`–`03` and the plotting scripts below (gitignored, not committed) |
 
 ### Pipeline scripts (`scripts/`)
 
@@ -41,7 +41,7 @@ This is a living document. Update it as decisions get made — don't let it drif
 | `01_profile_dataset.py` | `Final_data.csv` → `dataset_profile.md` | Per-column dtype, missingness, range, unique values, and a one-line description of what each column represents |
 | `02_clean_dataset.py` | `Final_data.csv` → `Final_data_cleaned.csv` | Drops `Unnamed: 0`; buckets `Disease` into the 7 main categories + "Other"; drops the 1 row with non-numeric `Cases` ("3/1") and casts to int; fills missing `Deaths` with 0; converts `Temp` Kelvin→Celsius; extracts `week_of_outbreak` to a plain integer |
 | `03_impute_dataset.py` | `Final_data_cleaned.csv` → `Final_data_imputed.csv` | Imputes `Temp` via linear regression on `Latitude`+`Longitude` (R²≈0.17); imputes `LAI` via linear regression on `Latitude`+`Longitude`+`Temp` (R²≈0.20); fills `preci` with the median; adds `Temp_imputed`/`LAI_imputed`/`preci_imputed` boolean flags |
-| `04_correlation_heatmap.py` | `Final_data_cleaned.csv` → `correlation_heatmap.png` | Pearson correlation heatmap across all numeric columns |
+| `04`–`19` (EDA plots) | `Final_data_imputed.csv` → various PNGs in `data/` | Correlation heatmap, time trends, disease/geographic small multiples, seasonality heatmap, box plot, state/year totals, and precipitation-lag & disease-correlation analyses — **see `EDA_FINDINGS.md` for the full list, what each one shows, and the key findings** (some intermediate scripts were tried and removed after review; the doc reflects only what was kept) |
 
 ### Columns
 
@@ -88,7 +88,7 @@ lumps the rest into `Other`:
 
 ## 3. Goals for This Project
 
-- [ ] Perform thorough EDA on the EpiClim dataset
+- [x] Perform thorough EDA on the EpiClim dataset — see `EDA_FINDINGS.md`
 - [ ] Identify and test hypotheses about climate–disease relationships
 - [ ] Build at least one predictive/explanatory model
 - [ ] Communicate findings clearly (visualizations + writeup)
@@ -99,17 +99,17 @@ lumps the rest into `Other`:
 
 ## 4. Research Questions & Hypotheses
 
-> **Status: TBD — brainstorming in progress.** This section will be filled in collaboratively.
+> **Status: EDA gives preliminary answers to most of these — see notes below and `EDA_FINDINGS.md`.** Still need to pick 2–4 to carry into modeling.
 
 Some candidate directions to evaluate (not finalized):
 
-- Does precipitation lag correlate with dengue/malaria case spikes (mosquito breeding lag effect)?
-- Does temperature range affect disease type differently (dengue vs. malaria vs. ADD)?
-- Is there a seasonal pattern per disease, and does it shift geographically (e.g., monsoon-driven spread from south to north)?
-- Does Leaf Area Index (vegetation greenness) correlate with vector-borne disease incidence (proxy for mosquito habitat)?
-- Have outbreak patterns shifted over the 15-year span (e.g., climate change signal, urbanization, policy interventions)?
-- Which states/districts are consistent hotspots vs. sporadic outbreak sites?
-- Can climate variables predict an outbreak (case count above threshold) N weeks in advance?
+- Does precipitation lag correlate with dengue/malaria case spikes (mosquito breeding lag effect)? — **Yes, modestly**: vector-borne diseases peak at a 1-month precipitation lag vs. lag-0 for waterborne ADD (`EDA_FINDINGS.md` #11).
+- Does temperature range affect disease type differently (dengue vs. malaria vs. ADD)? — Not conclusively answered by a kept plot; an earlier binned-histogram attempt suggested a temperature "sweet spot" for some diseases but was removed after review, so this is still open.
+- Is there a seasonal pattern per disease, and does it shift geographically (e.g., monsoon-driven spread from south to north)? — Seasonal timing per disease confirmed (seasonality heatmap, `EDA_FINDINGS.md` #6); geographic shift over the season not yet tested.
+- Does Leaf Area Index (vegetation greenness) correlate with vector-borne disease incidence (proxy for mosquito habitat)? — **Weak/no support** found so far (`EDA_FINDINGS.md` #9 caveats, correlation heatmap).
+- Have outbreak patterns shifted over the 15-year span (e.g., climate change signal, urbanization, policy interventions)? — Partially: reporting volume drops sharply in 2020/2022 (likely COVID/data-cutoff, not climate signal) — not yet disentangled.
+- Which states/districts are consistent hotspots vs. sporadic outbreak sites? — **Answered**: district/state hotspot maps and totals (`EDA_FINDINGS.md` #4, #5, #8).
+- Can climate variables predict an outbreak (case count above threshold) N weeks in advance? — Not yet tested; a modeling question, not an EDA one.
 
 **Action item:** Finalize 2–4 concrete, testable hypotheses before moving from EDA to modeling.
 
@@ -117,12 +117,16 @@ Some candidate directions to evaluate (not finalized):
 
 ## 5. Planned EDA Approach
 
-- [ ] Univariate analysis: distributions of cases, deaths, climate variables
-- [ ] Temporal analysis: trends over years, seasonality within years, week-of-year patterns per disease
-- [ ] Spatial analysis: choropleth/map of cases by state/district, hotspot identification
-- [ ] Bivariate/correlation analysis: climate variables vs. case counts (overall and per disease)
-- [ ] Lag analysis: does climate at week *t* predict cases at week *t+k*?
-- [ ] Disease comparison: how do dengue, malaria, and ADD differ in climate sensitivity?
+- [x] Univariate analysis: distributions of cases, deaths, climate variables — box plot of Cases by disease
+- [x] Temporal analysis: trends over years, seasonality within years, week-of-year patterns per disease — monthly time trends, seasonality heatmap, outbreak-count trends
+- [x] Spatial analysis: choropleth/map of cases by state/district, hotspot identification — district lat/long hotspot maps, state totals bar chart
+- [x] Bivariate/correlation analysis: climate variables vs. case counts (overall and per disease) — correlation heatmap, disease-to-disease correlation
+- [x] Lag analysis: does climate at week *t* predict cases at week *t+k*? — done at monthly resolution (precipitation-lag correlation); weekly resolution tried and dropped as too noisy across 14 merged years
+- [x] Disease comparison: how do dengue, malaria, and ADD differ in climate sensitivity? — per-disease small multiples for trends, hotspots, and seasonality
+
+All of the above are detailed in `EDA_FINDINGS.md`, including which findings
+turned out weak/negative (e.g. disease-to-disease correlation, vegetation/LAI
+as a case-count driver).
 
 ---
 
@@ -177,3 +181,6 @@ Candidate approaches to consider:
 | 2026-09-19 | Plotted a Pearson correlation heatmap over all numeric columns (`scripts/04_correlation_heatmap.py` → `correlation_heatmap.png`) to inform imputation strategy. Strongest relationships: `Temp` vs. `LAI` (-0.44), `Temp` vs. `preci` (-0.39), `Temp` vs. `Longitude` (-0.37); `mon` vs. `week_of_outbreak` (0.90, expected redundancy). |
 | 2026-09-19 | Imputed remaining missingness (`scripts/03_impute_dataset.py` → `Final_data_imputed.csv`): `Temp` via linear regression on `Latitude`+`Longitude` (R²≈0.17); `LAI` via linear regression on `Latitude`+`Longitude`+`Temp` (R²≈0.20); `preci` via median fill. Added `Temp_imputed`/`LAI_imputed`/`preci_imputed` flags so imputed rows can be identified later. Note: regression R² is modest, so these are directional imputations, not precise reconstructions. |
 | 2026-09-19 | Initialized local git repo. Committed `scripts/` and raw `data/Final_data.csv`; derived CSVs, the profile, and the heatmap PNG are gitignored (regenerable from scripts) pending a dedicated results/plots folder. |
+| 2026-09-19 | Pushed the repo to a private GitHub repository (`arcyadav/-epiclim_analysis-`). |
+| 2026-09-19 | Ran a full EDA plotting pass (`scripts/05`–`19`): monthly time trends, per-disease trends, district/state geographic hotspot maps, a disease×month×climate seasonality heatmap, a Cases-by-disease box plot, monthly outbreak-count trends, a precipitation-lag correlation analysis, and a disease-to-disease correlation heatmap. Two exploratory approaches (a scatter+trend-line climate relationship chart, and a weekly seasonality-by-disease chart) were tried and deliberately removed after review — the first for being too overplotted/noisy, the second for being too noisy once 14 years of data were merged into a single 52-week axis. Full plot-by-plot writeup and findings are in the new `EDA_FINDINGS.md` rather than duplicated here. |
+| 2026-09-19 | Key cross-cutting finding: **outbreak count (number of records) is a steadier signal than total Cases**, since Cases is dominated by a handful of extreme records (e.g. the 2009 Cholera outlier). Outbreak-count versions of the monthly trend and precipitation-lag charts were built alongside the Cases versions and show cleaner, stronger seasonal/lag patterns. |
