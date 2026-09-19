@@ -1,0 +1,12 @@
+# Generated data outputs (regenerate via scripts/)
+data/Final_data_cleaned.csv
+data/Final_data_imputed.csv
+data/dataset_profile.md
+data/correlation_heatmap.png
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor
+.vscode/
