@@ -1,0 +1,87 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project overview
+
+EpiClim: an exploratory data analysis (EDA) project on a weekly, district-level
+Indian disease-surveillance dataset (dengue, malaria, cholera, etc.) joined
+with climate variables (precipitation, temperature, vegetation/LAI), 2009–2023.
+This is a course project (project 1 of 4); modeling has not started yet — see
+`spec.md` for goals/status and `EDA_FINDINGS.md` for the full plot-by-plot
+writeup of what's been found so far. Both are living documents — read them
+before assuming the current state of the analysis, and update them (plus the
+Changelog at the bottom of `spec.md`) when you add or change EDA/modeling work,
+rather than duplicating findings only in code comments.
+
+## Commands
+
+No build, lint, or test tooling — this is a linear sequence of standalone
+Python scripts, run manually one at a time:
+
+```
+python scripts/<NN>_<name>.py
+```
+
+Run scripts **from the repository root** — every script hardcodes paths like
+`data/Final_data.csv` relative to the current working directory, not to the
+script's own location.
+
+Dependencies: pandas, numpy, matplotlib, scikit-learn (only for
+`LinearRegression` in the imputation step). No requirements file or lockfile
+exists yet; use whatever conda/venv environment already has these installed.
+
+## Architecture: the pipeline
+
+Scripts in `scripts/` are numbered and must run in order, each consuming the
+previous step's output:
+
+1. `01_profile_dataset.py` — `data/Final_data.csv` → `data/dataset_profile.md`
+   (per-column dtype/missingness/range profile)
+2. `02_clean_dataset.py` — → `data/Final_data_cleaned.csv` (disease bucketing,
+   drops the one bad `Cases` row, Kelvin→Celsius, etc.)
+3. `03_impute_dataset.py` — → `data/Final_data_imputed.csv` (regression-based
+   imputation for `Temp`/`LAI`, median fill for `preci`, adds `*_imputed` flags)
+4. `04` through `19` — all read `data/Final_data_imputed.csv` and each
+   produces one EDA plot PNG in `data/`. These are independent of each other
+   (order among them doesn't matter), but all depend on steps 1–3 having run.
+5. `20`+ — hypothesis-test scripts, one per hypothesis defined in `spec.md`
+   section 4. Each reads `data/Final_data_imputed.csv`, prints a results
+   table, and saves it as a CSV in `data/`; results are written up in
+   `EDA_FINDINGS.md`. Tests are limited to the course's set: t-test,
+   Mann-Whitney, ANOVA, Kruskal-Wallis, chi-square, Pearson, Spearman.
+
+Numbering has gaps (e.g. 11, 12, 15 are missing) — some exploratory scripts
+were tried and deliberately deleted after review; this is expected, not a
+missing-file bug. Do not renumber existing scripts to close gaps.
+
+Every script follows the same shape: a module docstring stating its
+Input/Output paths, `IN_PATH`/`OUT_PATH` constants, all logic in a `main()`,
+guarded by `if __name__ == "__main__":`. Follow this shape for any new script
+you add to `scripts/`.
+
+Plotting scripts share a small hand-rolled visual style (not a shared theme
+module — each script redefines it): warm off-white background (`SURFACE`,
+`#fcfcfb`/`#fcfbf7`-ish), near-black ink for titles (`INK`), muted brown-gray
+for axis text (`MUTED`), light warm gridlines (`GRID`), top/right spines
+hidden, left/bottom spines colored to match `GRID`. Match this palette in new
+plots rather than using matplotlib defaults.
+
+## Data files and git
+
+Per `.gitignore`, the raw dataset (`data/Final_data.csv`) and all `scripts/`
+are committed, but everything derived/regenerable is gitignored: the cleaned
+and imputed CSVs, `dataset_profile.md`, and plot PNGs. Regenerate them by
+re-running the pipeline rather than expecting them to already be in a fresh
+checkout. `EDA_FINDINGS.md` exists specifically because the PNGs themselves
+aren't committed — it's the durable record of what each plot showed.
+
+Cases and outbreak-count are two different signals used throughout the EDA:
+raw `Cases` is heavily skewed by a handful of extreme outlier records (see the
+2009 Cholera outlier documented in `EDA_FINDINGS.md`), while outbreak *record
+count* per period is the steadier, more climate-aligned signal. Later scripts
+(16+) deliberately switched from Cases-based to count-based versions of
+earlier analyses (e.g. `17_outbreak_trends_by_disease.py` vs. `06_disease_trends.py`,
+`19_precip_lag_analysis_outbreak_count.py` superseding a since-deleted
+Cases-based version) — prefer outbreak count over raw Cases as a signal in any
+new analysis unless you have a specific reason to look at case totals.

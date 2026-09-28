@@ -252,6 +252,232 @@ that was changed and why the result isn't simply "better" as a result.)
 
 ---
 
+# Hypothesis test results
+
+Hypotheses are defined in `spec.md` section 4. Each is tested by its own
+script, which prints a results table and saves it as a CSV in `data/`.
+
+## H1. Precipitation lag differs by transmission route
+**Script:** `20_h1_precip_lag_test.py` → `data/h1_precip_lag_results.csv`
+
+Pearson and Spearman correlation between national mean precipitation at
+month *(t − lag)* and each disease's outbreak count at month *t*, lag 0 and
+1, over 158 months (no empty months in the range). p-values Holm-corrected
+across the 10 disease × lag tests within each method.
+
+| Disease | Pearson r (lag 0 / lag 1) | Spearman ρ (lag 0 / lag 1) | Strongest lag |
+|---|---|---|---|
+| Acute Diarrhoeal Disease | **0.58** / 0.36 | **0.55** / 0.41 | 0 |
+| Dengue | 0.44 / **0.52** | 0.46 / **0.50** | 1 |
+| Chikungunya | 0.20 / **0.30** | 0.24 / **0.30** | 1 |
+| Cholera | **0.51** / 0.33 | **0.54** / 0.46 | 0 |
+| Malaria | **0.36** / 0.34 | **0.47** / 0.45 | 0 (near tie) |
+
+- **H0 rejected for all 20 tests** (every Holm-adjusted p < 0.05; largest
+  is Chikungunya lag-0 Pearson, p ≈ 0.012). Rainfall and outbreak frequency
+  are positively correlated for every disease at both lags.
+- **The lag pattern splits along transmission route**, and Pearson and
+  Spearman agree on the strongest lag for every disease:
+  - *Aedes*-borne **Dengue and Chikungunya** are strongest at lag 1 — the
+    mosquito-breeding delay.
+  - Waterborne **ADD and Cholera** are strongest at lag 0 — contaminated
+    water acts immediately. (Note: Cholera is waterborne, not vector-borne
+    as the #11 writeup above groups it; this result fits that.)
+  - **Malaria** is effectively tied between lags 0 and 1 (Δr ≈ 0.02), so it
+    doesn't cleanly support either side.
+- Spearman is higher than Pearson for Malaria and Cholera lag 1, suggesting
+  a monotonic but not linear relationship (a few extreme months pull
+  Pearson down).
+- **Limitations:** whether lag 1 is *significantly* stronger than lag 0 is
+  not formally tested — only that each correlation is non-zero. Monthly
+  series are autocorrelated and share the monsoon seasonal cycle, so
+  p-values are optimistic and some of the correlation is seasonality
+  itself rather than a direct rainfall effect.
+
+## H2. Outbreaks are seasonal
+**Script:** `21_h2_seasonality_test.py` → `data/h2_seasonality_results.csv`
+
+Chi-square goodness-of-fit per disease: outbreak record counts by calendar
+month vs. an even spread. The expected counts are weighted by how often
+each calendar month occurs in the data range (**2009-05 to 2022-06**, so
+May/June occur 14 times, the rest 13). p-values Holm-corrected across the
+8 diseases; df = 11 for all.
+
+| Disease | n | χ² | Holm p | Cramér's V | Peak month (share) |
+|---|---|---|---|---|---|
+| Acute Diarrhoeal Disease | 5126 | 1432 | 1e-299 | 0.16 | Jul (17%) |
+| Dengue | 1618 | 511 | 1e-101 | 0.17 | Sep (16%) |
+| Chikungunya | 731 | 73 | 9e-11 | 0.10 | Aug (13%) |
+| Cholera | 666 | 329 | 4e-63 | 0.21 | Jul (21%) |
+| Malaria | 544 | 182 | 3e-32 | 0.17 | Jul (16%) |
+| Acute Encephalitis Syndrome | 111 | 80 | 5e-12 | 0.26 | Jun (27%) |
+| Acute Gastroenteritis | 100 | 49 | 2e-6 | 0.21 | Jun (20%) |
+| Other | 88 | 45 | 5e-6 | 0.22 | Sep (19%) |
+
+- **H0 rejected for all 8 diseases.** Every disease's outbreaks cluster in
+  certain months. All expected counts are ≥ 7, so the chi-square
+  approximation is valid even for the small diseases.
+- **Every peak falls in Jun–Sep**, the monsoon window. An even spread would
+  put ~8% in each month; the peaks hold 13–27%.
+- **Chikungunya is the weakest** (V = 0.10). This fits its concentrated
+  2011–2012 epidemic wave: one burst of outbreaks rather than a strong
+  repeating annual cycle.
+- **Record-count peaks differ from the case-weighted peaks in #6.** By
+  outbreak count, Dengue peaks in Sep (not Jul), Cholera in Jul (not May),
+  and Malaria in Jul (not Sep). The #6 heatmap weights months by case
+  totals, so a few huge outbreaks (e.g. the 2009 Cholera outlier in a May
+  reporting week) shifted its peaks. How *often* outbreaks happen follows
+  the monsoon more uniformly than how *large* they get.
+- **The data ends in June 2022**, confirming the suspicion in #9 that 2022
+  is an incomplete year rather than a real drop.
+- **Limitations:** records in the same district or outbreak wave aren't
+  fully independent, which inflates χ². With p-values this small the
+  conclusion holds anyway; the Cramér's V values (0.10–0.26, small to
+  medium) are the fairer measure of how strong the seasonality is.
+
+## H3. Diseases occur under different temperature conditions
+**Script:** `22_h3_temp_by_disease_test.py` →
+`data/h3_temp_by_disease_summary.csv`, `data/h3_temp_by_disease_pairwise.csv`
+
+Temperature at outbreak time compared across the 8 diseases, using only the
+8,046 rows with a measured (non-imputed) `Temp`.
+
+| Disease | n | Mean °C | Median °C | SD |
+|---|---|---|---|---|
+| Chikungunya | 684 | 33.8 | 33.1 | 5.9 |
+| Dengue | 1471 | 31.5 | 30.8 | 6.3 |
+| Other | 78 | 31.4 | 31.0 | 5.1 |
+| Acute Diarrhoeal Disease | 4542 | 31.2 | 30.0 | 7.3 |
+| Cholera | 590 | 31.2 | 29.7 | 6.7 |
+| Acute Gastroenteritis | 82 | 30.5 | 30.3 | 9.6 |
+| Malaria | 493 | 30.2 | 29.0 | 5.7 |
+| Acute Encephalitis Syndrome | 106 | 27.5 | 27.8 | 7.8 |
+
+- **ANOVA assumptions fail:** Shapiro-Wilk rejects normality for 7 of 8
+  diseases, and Levene rejects equal variances (p ≈ 4e-14). So
+  **Kruskal-Wallis is the test to trust**, with ANOVA shown for comparison.
+- **H0 rejected by both tests:** ANOVA F(7, 8038) = 18.9, p ≈ 4e-25;
+  Kruskal-Wallis H(7) = 162, p ≈ 1e-31. The two agree, which makes the
+  conclusion robust to the assumption violations.
+- **But the effect is tiny:** η² = 0.016 and ε² = 0.019. Disease type
+  explains only ~2% of the variation in outbreak temperature. It's
+  significant mainly because n is large. The medians of 5 of the 8 diseases
+  sit within about 2°C of each other (29.0–31.0°C).
+- **Post-hoc (28 pairwise Mann-Whitney tests, Bonferroni):** 13 pairs
+  differ significantly. Two diseases drive almost all of it:
+  - **Chikungunya is warmest** (median 33.1°C). It differs from every
+    well-sampled disease, most strongly from Malaria (rank-biserial r = 0.36).
+  - **AES is coolest** (median 27.8°C). It differs from most diseases, most
+    strongly from Chikungunya (r = 0.50, a large effect).
+  - Dengue vs. Malaria (r = 0.16) and ADD vs. Malaria (r = 0.10) are
+    significant but small. ADD, Dengue, Cholera, Acute Gastroenteritis and
+    Other are statistically indistinguishable from one another.
+- **Likely geographic confound:** the two outliers match the hotspot maps
+  in #5. Chikungunya is concentrated in the hot south (Kerala/Tamil Nadu),
+  and AES in the northeast/eastern UP–Bihar belt. Temp also correlates with
+  latitude/longitude (#1). So this probably reflects *where* each disease
+  occurs more than a temperature preference. Testing that would need
+  temperature compared within regions.
+
+## H4. Diseases have distinct geographic footprints
+**Script:** `23_h4_disease_region_test.py` →
+`data/h4_disease_region_observed.csv`, `data/h4_disease_region_residuals.csv`
+
+Chi-square test of independence on the disease × region table of outbreak
+record counts. States/UTs are grouped into 6 regions following India's
+Zonal Councils: North (J&K, HP, Punjab, Haryana, Chandigarh, Delhi,
+Uttarakhand, Rajasthan), Central (UP, MP, Chhattisgarh), East (Bihar,
+Jharkhand, Odisha, West Bengal, A&N), West (Maharashtra, Gujarat, Goa,
+DNH, Daman & Diu), South (Karnataka, TN, Kerala, AP, Telangana,
+Puducherry, Lakshadweep), Northeast (the 8 NE states incl. Sikkim). All 36
+state names in the data mapped cleanly, with no spelling variants.
+"Other" is excluded (a grab-bag of labels, not one disease), leaving
+8,896 records.
+
+Share of each disease's outbreaks by region (%):
+
+| Disease | North | Central | East | West | South | Northeast |
+|---|---|---|---|---|---|---|
+| Acute Diarrhoeal Disease | 11.6 | 17.5 | 25.4 | 15.1 | 24.9 | 5.5 |
+| Dengue | 6.6 | 7.2 | 13.5 | 24.5 | **41.3** | 6.8 |
+| Chikungunya | 1.4 | 7.0 | 5.9 | 25.2 | **59.6** | 1.0 |
+| Cholera | **18.5** | 7.1 | 21.2 | 19.5 | 26.4 | 7.4 |
+| Malaria | 4.8 | **25.0** | 21.5 | 23.0 | 10.5 | **15.3** |
+| Acute Encephalitis Syndrome | 5.4 | 7.2 | 27.9 | 13.5 | 0.0 | **45.9** |
+| Acute Gastroenteritis | 18.0 | 16.0 | 9.0 | **33.0** | 19.0 | 5.0 |
+
+- **H0 rejected:** χ²(30) = 1440, p ≈ 3e-284, **Cramér's V = 0.18**. For
+  a table this shape (min dimension 6, so 5 degrees of freedom for the
+  effect) that's a medium-to-large effect, much stronger than H3's
+  temperature effect. No expected counts are below 5 (min 6.6), so the
+  test is valid.
+- **Which cells drive it** (adjusted standardized residuals; significant if
+  |z| > 3.24, Bonferroni over 42 cells):
+  - **Chikungunya → South** (z = +18.6, 60% of its outbreaks), rare in the
+    North/East/Northeast. The strongest cell in the table.
+  - **AES → Northeast** (z = +16.8, 46%), and **zero** outbreaks in the
+    South. Confirms the AES belt from #5.
+  - **Dengue → South and West** (+11.4, +6.7), under-represented in
+    North/Central/East.
+  - **Malaria → Central and Northeast** (+7.4, +8.4), strongly
+    under-represented in the South (−10.1).
+  - **Cholera → North** (+7.7), matching the Punjab/J&K cluster in #5. It
+    is *not* over-represented in the East (z = 0.2). The West Bengal
+    hotspot in #5 was case-weighted (driven by the 2009 outlier), while by
+    outbreak count Cholera's share of the East matches the average.
+  - **ADD → North, Central, East** (+6 to +12), with a lower share in the
+    West/South, where vector-borne diseases take a bigger slice.
+  - Acute Gastroenteritis has only one significant cell (West, +3.7).
+- **Interpretation note:** the test compares each region's *mix* of
+  diseases, not raw burden, so differences in how much each region reports
+  overall (surveillance capacity, population) are largely factored out.
+  It still counts outbreak records rather than cases per population.
+
+## H5. More outbreaks are reported in monsoon months
+**Script:** `24_h5_monsoon_outbreak_test.py` → `data/h5_monsoon_outbreak_results.csv`
+
+Each data point is one year-month's total outbreak record count (all
+diseases). Monsoon (Jun–Sep) vs. all other months, one-sided (monsoon
+higher). Main analysis excludes 2020 (COVID reporting collapse) and 2022
+(data ends in June); a sensitivity run on all months is alongside.
+
+| | Main (excl. 2020, 2022) | All months |
+|---|---|---|
+| Months (monsoon / other) | 48 / 92 | 53 / 105 |
+| Mean outbreaks/month (monsoon / other) | 98.7 / 42.5 | 90.7 / 39.8 |
+| Median (monsoon / other) | 95 / 35 | 89 / 32 |
+| Welch t-test | t = 9.56, p ≈ 1e-14 | t = 7.97, p ≈ 1e-11 |
+| Cohen's d | 1.91 | 1.59 |
+| Mann-Whitney U | U = 4002, p ≈ 2e-15 | U = 4689, p ≈ 1e-12 |
+| Rank-biserial r | 0.81 | 0.69 |
+
+- **H0 rejected by both tests, in both analyses.** Monsoon months average
+  **~2.3× as many outbreaks** as other months (median 95 vs. 35).
+- **The effect is very large:** Cohen's d = 1.9, and rank-biserial
+  r = 0.81 means a randomly chosen monsoon month beats a randomly chosen
+  non-monsoon month about 90% of the time. This is the largest effect
+  across H1–H5.
+- **t-test vs. Mann-Whitney:** the t-test's assumptions are partly broken.
+  Non-monsoon counts are clearly non-normal (Shapiro-Wilk p ≈ 4e-7,
+  right-skewed), though monsoon counts pass (p = 0.15). Variances are
+  unequal (Levene p ≈ 0.006), which is why Welch's version is used rather
+  than the pooled t-test. **Mann-Whitney is the more trustworthy test**
+  because it makes no normality assumption. The two agree here because
+  the samples are large enough (48/92) for the t-test to be fairly robust,
+  and because the gap between groups is so big.
+- **Excluding 2020/2022 strengthens the result** (d 1.59 → 1.91). Their
+  unusually low monsoon months pull the monsoon mean down (98.7 → 90.7)
+  and widen its spread (SD 37 → 43), while the non-monsoon SD is unchanged
+  (24.9 in both).
+- **Limitations:** months aren't independent (consecutive months are
+  autocorrelated, and reporting volume drifts over the years; see #9/#10),
+  so the p-values are optimistic. With an effect this size the conclusion
+  isn't in doubt. H5 overlaps with H2 (both are about seasonality); H2
+  shows *which* months each disease peaks in, while H5 measures *how much*
+  higher overall reporting is during the monsoon.
+
+---
+
 ## Known data-quality item: the 2009 Cholera outlier
 
 A single record — **South 24 Parganas, West Bengal, 27th week of 2009: 51,225

@@ -42,6 +42,11 @@ This is a living document. Update it as decisions get made — don't let it drif
 | `02_clean_dataset.py` | `Final_data.csv` → `Final_data_cleaned.csv` | Drops `Unnamed: 0`; buckets `Disease` into the 7 main categories + "Other"; drops the 1 row with non-numeric `Cases` ("3/1") and casts to int; fills missing `Deaths` with 0; converts `Temp` Kelvin→Celsius; extracts `week_of_outbreak` to a plain integer |
 | `03_impute_dataset.py` | `Final_data_cleaned.csv` → `Final_data_imputed.csv` | Imputes `Temp` via linear regression on `Latitude`+`Longitude` (R²≈0.17); imputes `LAI` via linear regression on `Latitude`+`Longitude`+`Temp` (R²≈0.20); fills `preci` with the median; adds `Temp_imputed`/`LAI_imputed`/`preci_imputed` boolean flags |
 | `04`–`19` (EDA plots) | `Final_data_imputed.csv` → various PNGs in `data/` | Correlation heatmap, time trends, disease/geographic small multiples, seasonality heatmap, box plot, state/year totals, and precipitation-lag & disease-correlation analyses — **see `EDA_FINDINGS.md` for the full list, what each one shows, and the key findings** (some intermediate scripts were tried and removed after review; the doc reflects only what was kept) |
+| `20_h1_precip_lag_test.py` | `Final_data_imputed.csv` → `h1_precip_lag_results.csv` | Hypothesis H1: Pearson + Spearman tests of precipitation (lag 0/1) vs. monthly outbreak count per disease, Holm-corrected — results in `EDA_FINDINGS.md` |
+| `21_h2_seasonality_test.py` | `Final_data_imputed.csv` → `h2_seasonality_results.csv` | Hypothesis H2: chi-square goodness-of-fit of outbreak records by calendar month, per disease, Holm-corrected, with Cramér's V — results in `EDA_FINDINGS.md` |
+| `22_h3_temp_by_disease_test.py` | `Final_data_imputed.csv` → `h3_temp_by_disease_summary.csv`, `h3_temp_by_disease_pairwise.csv` | Hypothesis H3: Shapiro-Wilk/Levene assumption checks, ANOVA vs. Kruskal-Wallis on measured `Temp` across diseases, pairwise Mann-Whitney post-hoc (Bonferroni) — results in `EDA_FINDINGS.md` |
+| `23_h4_disease_region_test.py` | `Final_data_imputed.csv` → `h4_disease_region_observed.csv`, `h4_disease_region_residuals.csv` | Hypothesis H4: chi-square test of independence on disease × region (6 Zonal-Council regions), Cramér's V, adjusted standardized residuals — results in `EDA_FINDINGS.md` |
+| `24_h5_monsoon_outbreak_test.py` | `Final_data_imputed.csv` → `h5_monsoon_outbreak_results.csv` | Hypothesis H5: Welch's t-test vs. Mann-Whitney U (one-sided) on monthly outbreak count, monsoon vs. other months, excluding 2020/2022 plus an all-months sensitivity run — results in `EDA_FINDINGS.md` |
 
 ### Columns
 
@@ -89,7 +94,7 @@ lumps the rest into `Other`:
 ## 3. Goals for This Project
 
 - [x] Perform thorough EDA on the EpiClim dataset — see `EDA_FINDINGS.md`
-- [ ] Identify and test hypotheses about climate–disease relationships
+- [x] Identify and test hypotheses about climate–disease relationships — H1–H5, see section 4 and `EDA_FINDINGS.md`
 - [ ] Build at least one predictive/explanatory model
 - [ ] Communicate findings clearly (visualizations + writeup)
 
@@ -111,7 +116,28 @@ Some candidate directions to evaluate (not finalized):
 - Which states/districts are consistent hotspots vs. sporadic outbreak sites? — **Answered**: district/state hotspot maps and totals (`EDA_FINDINGS.md` #4, #5, #8).
 - Can climate variables predict an outbreak (case count above threshold) N weeks in advance? — Not yet tested; a modeling question, not an EDA one.
 
-**Action item:** Finalize 2–4 concrete, testable hypotheses before moving from EDA to modeling.
+### Finalized hypotheses for testing
+
+Five hypotheses chosen (2026-09-28), each targeting a different EDA finding.
+Restricted to the course's test set: t-test, Mann-Whitney U, ANOVA,
+Kruskal-Wallis, chi-square, Pearson, Spearman — together H1–H5 use all
+seven. Prefer the non-parametric version where data is skewed (`Cases`,
+monthly counts), and where both are run, compare them and say which is more
+trustworthy. Report effect sizes alongside p-values — with ~9K rows nearly
+everything will be "significant". Apply Holm/Bonferroni correction within any
+hypothesis that runs multiple tests.
+
+| # | Hypothesis | H₀ | Test | Notes |
+|---|---|---|---|---|
+| H1 | **Precipitation lag differs by transmission route** | No correlation between national mean precipitation at month *t − lag* and a disease's outbreak count at month *t* | Pearson + Spearman at lag 0 and lag 1, per disease; compare which lag is strongest | Expect Dengue/Chikungunya strongest at lag 1, ADD at lag 0 (`EDA_FINDINGS.md` #11). Monthly series are autocorrelated, so p-values are optimistic — note as a limitation |
+| H2 | **Outbreaks are seasonal** | Each disease's outbreak records are uniformly distributed across the 12 months | Chi-square goodness-of-fit, per disease, Holm-corrected | Expect strong rejection for ADD/Dengue/Cholera/Malaria; AES (n=111) may not (`EDA_FINDINGS.md` #6, #10) |
+| H3 | **Diseases occur under different temperature conditions** | Temp at outbreak time has the same distribution (mean) across diseases | One-way ANOVA and Kruskal-Wallis side by side; pairwise Mann-Whitney (Bonferroni) as post-hoc; η² / ε² effect size | Check ANOVA assumptions (Shapiro-Wilk, Levene). Use only `Temp_imputed == False` rows (imputation R²≈0.17); optionally repeat for `preci` |
+| H4 | **Diseases have distinct geographic footprints** | Disease type is independent of region | Chi-square test of independence + Cramér's V | Map `state_ut` → ~5 regions (N/S/E/W/NE); merge/drop sparse diseases if expected counts < 5 (`EDA_FINDINGS.md` #4, #5) |
+| H5 | **More outbreaks are reported in monsoon months** | Monthly outbreak count in monsoon months (Jun–Sep) is not higher than in non-monsoon months | Welch's t-test and Mann-Whitney U side by side (one-sided) | Unit = each year-month's total outbreak count. Counts are skewed, so Mann-Whitney is the more trustworthy of the two — contrast them in the writeup. Consider excluding 2020/2022 (reporting anomalies, `EDA_FINDINGS.md` #9) |
+
+**Framing caveat:** the dataset contains only reported-outbreak records (no
+zero/no-outbreak weeks), so H3/H4/H5 compare conditions *when outbreaks
+occurred*, not whether conditions *cause* outbreaks.
 
 ---
 
@@ -184,3 +210,9 @@ Candidate approaches to consider:
 | 2026-09-19 | Pushed the repo to a private GitHub repository (`arcyadav/-epiclim_analysis-`). |
 | 2026-09-19 | Ran a full EDA plotting pass (`scripts/05`–`19`): monthly time trends, per-disease trends, district/state geographic hotspot maps, a disease×month×climate seasonality heatmap, a Cases-by-disease box plot, monthly outbreak-count trends, a precipitation-lag correlation analysis, and a disease-to-disease correlation heatmap. Two exploratory approaches (a scatter+trend-line climate relationship chart, and a weekly seasonality-by-disease chart) were tried and deliberately removed after review — the first for being too overplotted/noisy, the second for being too noisy once 14 years of data were merged into a single 52-week axis. Full plot-by-plot writeup and findings are in the new `EDA_FINDINGS.md` rather than duplicated here. |
 | 2026-09-19 | Key cross-cutting finding: **outbreak count (number of records) is a steadier signal than total Cases**, since Cases is dominated by a handful of extreme records (e.g. the 2009 Cholera outlier). Outbreak-count versions of the monthly trend and precipitation-lag charts were built alongside the Cases versions and show cleaner, stronger seasonal/lag patterns. |
+| 2026-09-28 | Finalized 4 hypotheses for testing (section 4): precipitation lag by transmission route, per-disease seasonality, temperature by disease, and disease × region independence. Revised same day to use only the course's test set (t-test, Mann-Whitney, ANOVA, Kruskal-Wallis, chi-square, Pearson, Spearman): H1 switched from Steiger's test to Pearson/Spearman lag correlations, H3 post-hoc switched from Dunn's to pairwise Mann-Whitney and gained an ANOVA comparison, and added H5 (monsoon vs. non-monsoon outbreak count, t-test vs. Mann-Whitney). |
+| 2026-09-28 | Tested H1 (`scripts/20_h1_precip_lag_test.py`): H0 rejected for all 5 diseases at both lags. Dengue/Chikungunya correlate most strongly with the previous month's rainfall (lag 1), ADD/Cholera with the current month's (lag 0), Malaria roughly tied. Pearson and Spearman agree. Full table in `EDA_FINDINGS.md`. |
+| 2026-09-28 | Tested H2 (`scripts/21_h2_seasonality_test.py`): H0 rejected for all 8 diseases; every peak month falls in Jun–Sep, Chikungunya weakest (Cramér's V 0.10). Also confirmed the data ends 2022-06, so 2022 is an incomplete year. |
+| 2026-09-28 | Tested H3 (`scripts/22_h3_temp_by_disease_test.py`): ANOVA assumptions fail (non-normal, unequal variances), but both ANOVA and Kruskal-Wallis reject H0. Effect is tiny (ε² ≈ 0.02); driven by Chikungunya (warmest) and AES (coolest), likely a geographic confound rather than a temperature preference. This also settles the open temperature question in section 4: only a weak effect. |
+| 2026-09-28 | Tested H4 (`scripts/23_h4_disease_region_test.py`): states grouped into 6 Zonal-Council regions; H0 rejected, Cramér's V 0.18 (medium-to-large). Strongest footprints: Chikungunya → South, AES → Northeast, Malaria → Central/Northeast, Cholera → North. All 36 state names mapped cleanly (no spelling variants), partly closing the name-consistency open item. |
+| 2026-09-28 | Tested H5 (`scripts/24_h5_monsoon_outbreak_test.py`): monsoon months average ~2.3× the outbreaks of other months; H0 rejected by both Welch's t-test and Mann-Whitney, with the largest effect of any hypothesis (Cohen's d 1.9, rank-biserial 0.81). All 5 hypotheses now tested. |
