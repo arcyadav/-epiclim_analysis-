@@ -478,6 +478,135 @@ higher). Main analysis excludes 2020 (COVID reporting collapse) and 2022
 
 ---
 
+# Model: district × month outbreak prediction
+
+Setup is documented in `spec.md` section 6.
+
+## Building the grid
+**Script:** `25_build_district_month_grid.py` → `data/district_month_grid.csv`
+
+- **District names canonicalized:** 795 raw state + district names → **764**
+  districts. Case, punctuation and spacing variants were merged (e.g.
+  `Ashok Nagar`/`Ashoknagar`, `North 24 Parganas`/`24 North Parganas`,
+  a `Ramanathapuram Paramakudi` spelling with corrupted characters), plus
+  two manual merges: `Karbi-Anglong (Diphu)` → `Karbi Anglong`, and
+  Rangareddy's pre-2014 Andhra Pradesh records → Telangana. Renamed or
+  split districts with *different* names are not merged.
+- **Grid:** 764 districts × 158 months = 120,712 cells, 6,700 with an
+  outbreak (5.55%).
+- **Climate per cell:** the mean measured rainfall/temperature for the
+  cell's region that month (lag 0 and lag 1). 94 of 948 region-months have
+  no records; those are filled from training-period climatology in the
+  training script.
+
+## Results
+**Script:** `26_train_outbreak_model.py` → `data/outbreak_model_metrics.csv`,
+`data/outbreak_model_importance.csv`, `data/outbreak_model_results.png`
+
+685 districts (those with an outbreak in 2009–2017). Hyperparameters and
+the yes/no threshold were chosen on 2018; models were then refit on
+2009–2018 and scored once on 2019.
+
+| Model | Test 2019 PR-AUC | ROC-AUC | Precision | Recall | Stress 2020–22 PR-AUC |
+|---|---|---|---|---|---|
+| Random guessing | 0.061 | 0.50 | — | — | 0.026 |
+| Logistic regression, no climate | 0.192 | 0.758 | 0.23 | 0.26 | 0.122 |
+| Logistic regression, full | 0.196 | 0.760 | 0.24 | 0.31 | 0.120 |
+| Gradient boosting, no climate | 0.195 | 0.779 | 0.27 | 0.22 | 0.125 |
+| Gradient boosting, full | 0.196 | 0.777 | 0.25 | 0.29 | 0.120 |
+
+- **The models do learn something real:** PR-AUC ≈ 0.19–0.20 against
+  0.061 for random guessing, about **3.2× better**, and ROC-AUC 0.76–0.78.
+  At the chosen threshold, roughly 1 in 4 alerts is a real outbreak, and
+  the models catch 22–31% of real outbreaks.
+- **But they're only moderately useful as forecasters.** Most district-months
+  with an outbreak look very similar to ones without, given the available
+  features.
+- **Climate adds almost nothing.** Each full model beats its no-climate
+  version by at most 0.004 PR-AUC, which is within noise. Logistic
+  regression and gradient boosting perform about the same, so non-linear
+  effects don't help either.
+- **Why climate doesn't help, even though H1/H2/H5 found strong climate
+  links:** the region-level climate features mostly carry the *seasonal
+  cycle*, which month and district history already encode. Permutation
+  importance shows this: in the gradient boosting model, shuffling
+  `region_preci` hurts (it is the 3rd most important feature), but shuffling
+  `mon` doesn't. The model uses rainfall *instead of* month, not *on top
+  of* it. The hypothesis tests showed climate and outbreaks move together;
+  the model shows that at this resolution climate has no extra predictive
+  information beyond "what month is it."
+- **District history dominates:** the district's long-run outbreak rate,
+  its count over the past 12 months, and whether it had one last month are
+  the top features for both models. *Where* outbreaks happened before is
+  the best predictor of where they'll happen next.
+- **Stress test 2020–22:** PR-AUC falls to ~0.12, but the base rate also
+  collapses to 2.6%, so the lift over random is still about 4.7×, and
+  ROC-AUC holds at 0.75–0.79. The ranking of districts survives the
+  COVID-era reporting drop; the absolute probabilities don't, since the
+  models were trained when outbreaks were ~2.7× as common.
+- **Limitations:**
+  - Region-level climate is coarse. District-level rainfall from external
+    data (IMD gridded or CHIRPS) is the obvious next step and the fairest
+    test of whether climate adds predictive value.
+  - Region-month climate is averaged over the outbreak records in that
+    region-month, so it is biased toward outbreak locations.
+  - A missing record is treated as "no outbreak" but may be "no report."
+  - Districts created mid-period get zero-filled months from before they
+    existed.
+
+## Transmission-route models
+**Script:** `28_train_route_models.py` → `data/route_model_metrics.csv`,
+`data/route_model_importance.csv`, `data/route_model_results.png`
+
+Three models, one per transmission route, because H1 and H4 showed the routes
+respond to rainfall with different lags and occupy different regions:
+**Waterborne** (ADD, Cholera, Acute Gastroenteritis), ***Aedes*** (Dengue,
+Chikungunya: same mosquito), ***Anopheles*** (Malaria). AES is left out
+(a syndrome with mixed causes). Same grid and split as the any-disease
+model. One model type per route, gradient boosting, with the same model
+minus climate features as the baseline. History features count only that
+group's past outbreaks, and each model covers only districts with a group
+outbreak in 2009–2017.
+
+| Route | Districts | Test 2019 positives | Random | No climate | With climate | ROC-AUC (with climate) |
+|---|---|---|---|---|---|---|
+| Waterborne | 611 | 290 | 0.040 | 0.133 | 0.130 | 0.744 |
+| *Aedes* | 315 | 162 | 0.043 | 0.187 | 0.185 | 0.813 |
+| *Anopheles* | 184 | **18** | 0.008 | 0.058 | 0.093 | 0.865 |
+
+(Values in the Random / No climate / With climate columns are PR-AUC.)
+
+- **All three beat random:** waterborne ~3.3×, *Aedes* ~4.3×, *Anopheles*
+  ~11× on PR-AUC. *Aedes* outbreaks are the most predictable in absolute
+  terms (PR-AUC 0.19, ROC-AUC 0.81); waterborne the least (0.13).
+- **Climate still adds no measurable score for waterborne or *Aedes***
+  (−0.003 and −0.002 PR-AUC, within noise).
+- **But the models use the rainfall lag each route's biology predicts,
+  reproducing H1 from a completely different method:**
+  - The **waterborne** model relies on **same-month rainfall**
+    (`region_preci`, 4th most important) and ignores last month's.
+  - The ***Aedes*** model relies on **last month's rainfall**
+    (`region_preci_lag1`, its #1 feature) and ignores same-month rain.
+  - In both, `mon` falls to ~zero importance: rainfall acts as the seasonal
+    clock instead of month, which is why the score doesn't rise.
+- **Anopheles is too small to judge.** Malaria reporting thinned out after
+  2016, leaving only 10 positives in the validation year and 18 in the test
+  year. Climate *appears* to help (0.058 → 0.093 on test, 0.128 → 0.214 on
+  validation), and the model uses same-month rain, last month's rain and
+  temperature. But 18 positives can't separate that from chance: one or two
+  extra hits move PR-AUC by that much. The baseline flagged none of the 18
+  at its threshold. Treat it as suggestive, not a result.
+- **Splitting by route helped interpretability more than accuracy.**
+  Waterborne alone scores lower than the mixed any-disease model (0.13 vs.
+  0.20), partly because its base rate is lower (4.0% vs. 6.1%). What the
+  split does buy is that each model's use of rainfall lines up with its
+  transmission mechanism, which the mixed model hid.
+- (A Dengue-only model was also tried and dropped: the *Aedes* model
+  matched it, 0.185 vs. 0.169 test PR-AUC, with twice the positives, so it
+  was redundant.)
+
+---
+
 ## Known data-quality item: the 2009 Cholera outlier
 
 A single record — **South 24 Parganas, West Bengal, 27th week of 2009: 51,225

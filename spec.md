@@ -1,8 +1,8 @@
 # Project Spec: EpiClim — Climate-Health EDA & Modeling
 
-> **Status:** Draft / brainstorming phase — data cleaning, imputation, and EDA plotting pass complete; see `EDA_FINDINGS.md` for the full plot-by-plot writeup
+> **Status:** Data cleaning, EDA, hypothesis testing (H1–H5) and a first district × month outbreak model complete; see `EDA_FINDINGS.md` for all results. Writeup/presentation still to do.
 > **Course context:** Project 1 of 4 for this course
-> **Last updated:** 2026-09-19
+> **Last updated:** 2026-09-28
 
 This is a living document. Update it as decisions get made — don't let it drift out of sync with the actual analysis. See the Changelog at the bottom for a history of major decisions.
 
@@ -47,6 +47,9 @@ This is a living document. Update it as decisions get made — don't let it drif
 | `22_h3_temp_by_disease_test.py` | `Final_data_imputed.csv` → `h3_temp_by_disease_summary.csv`, `h3_temp_by_disease_pairwise.csv` | Hypothesis H3: Shapiro-Wilk/Levene assumption checks, ANOVA vs. Kruskal-Wallis on measured `Temp` across diseases, pairwise Mann-Whitney post-hoc (Bonferroni) — results in `EDA_FINDINGS.md` |
 | `23_h4_disease_region_test.py` | `Final_data_imputed.csv` → `h4_disease_region_observed.csv`, `h4_disease_region_residuals.csv` | Hypothesis H4: chi-square test of independence on disease × region (6 Zonal-Council regions), Cramér's V, adjusted standardized residuals — results in `EDA_FINDINGS.md` |
 | `24_h5_monsoon_outbreak_test.py` | `Final_data_imputed.csv` → `h5_monsoon_outbreak_results.csv` | Hypothesis H5: Welch's t-test vs. Mann-Whitney U (one-sided) on monthly outbreak count, monsoon vs. other months, excluding 2020/2022 plus an all-months sensitivity run — results in `EDA_FINDINGS.md` |
+| `25_build_district_month_grid.py` | `Final_data_imputed.csv` → `district_month_grid.csv` | Canonicalizes district names (795 → 764), builds the full district × month grid with a binary `outbreak` target, region-month climate features (lag 0/1) and past-only district-history features |
+| `26_train_outbreak_model.py` | `district_month_grid.csv` → `outbreak_model_metrics.csv`, `outbreak_model_importance.csv`, `outbreak_model_results.png` | Tunes on 2018, refits on 2009–2018, scores 2019 and 2020–22: logistic regression and gradient boosting, each with and without climate features; permutation importance; PR-curve + importance plot |
+| `28_train_route_models.py` | `district_month_grid.csv` + `Final_data_imputed.csv` → `route_model_metrics.csv`, `route_model_importance.csv`, `route_model_results.png` | Three transmission-route models (waterborne / *Aedes* / *Anopheles*), each gradient boosting with vs. without climate, same temporal split |
 
 ### Columns
 
@@ -95,7 +98,7 @@ lumps the rest into `Other`:
 
 - [x] Perform thorough EDA on the EpiClim dataset — see `EDA_FINDINGS.md`
 - [x] Identify and test hypotheses about climate–disease relationships — H1–H5, see section 4 and `EDA_FINDINGS.md`
-- [ ] Build at least one predictive/explanatory model
+- [x] Build at least one predictive/explanatory model — district × month outbreak classifier, see section 6
 - [ ] Communicate findings clearly (visualizations + writeup)
 
 *(To be refined once course requirements/rubric are confirmed — e.g., is a specific deliverable format, page count, or presentation required?)*
@@ -158,15 +161,50 @@ as a case-count driver).
 
 ## 6. Modeling Plan
 
-> **Status: TBD — to be decided after EDA and hypothesis finalization.**
+> **Status: first model built and evaluated (2026-09-28)** — scripts `25`/`26`, results in `EDA_FINDINGS.md` ("Model" section).
 
-Candidate approaches to consider:
-- Regression (predict case counts from climate variables) — linear, or tree-based (Random Forest / XGBoost) for non-linear effects
-- Time-series models (per district/disease) — e.g., ARIMA/Prophet, or lag-feature regression
-- Classification (outbreak vs. no-outbreak, threshold-based)
-- Spatial-temporal models if scope allows
+**Why this framing:** forecasting national outbreak totals isn't viable (only
+158 monthly points, data ends 2022-06, and 2020–22 are distorted by
+COVID-era reporting). Instead the model asks whether climate and season can
+predict *when and where* outbreaks happen.
 
-**Decision needed:** prediction task framing (regression vs. classification), target variable definition, train/test split strategy (likely temporal split given time-series nature, not random split).
+**Decisions made:**
+- **Task:** binary classification per district × month: did the district
+  report *any* disease outbreak? (Per-disease models were considered and
+  skipped.) The dataset has only outbreak records, so the grid's zeros are
+  constructed, assuming a missing record means no outbreak.
+- **Climate source:** region × month mean of this dataset's measured
+  rainfall/temperature (lag 0 and 1), not external data. Cells without an
+  outbreak have no climate value of their own, and per-district averages
+  are too sparse (median district has 5 outbreak-months). External
+  district-level rainfall (IMD gridded / CHIRPS) is noted as future work.
+- **Features:** month, region, lat/long, past-only district history
+  (previous month, same month last year, previous-12-month count,
+  expanding outbreak rate), and the climate features.
+- **Models:** logistic regression and gradient boosting
+  (`HistGradientBoostingClassifier`), each with and without climate
+  features. The no-climate versions are the baselines that isolate what
+  climate adds.
+- **Split (temporal):** train 2009-05–2017, validate 2018 (hyperparameters
+  and threshold), test 2019 after refitting on 2009–2018, stress test
+  2020–22 reported separately. Only districts with an outbreak in the
+  training period are modeled.
+- **Metrics:** PR-AUC (primary), ROC-AUC, Brier, and precision/recall/F1
+  at the validation-chosen threshold. Not accuracy (~94% by always
+  predicting "no").
+
+**Result in one line:** about 3× better than random (test PR-AUC ≈ 0.196
+vs. 0.061), driven by district history; climate features add essentially
+nothing beyond month and history at region resolution.
+
+**Transmission-route models** (`28_train_route_models.py`): since the
+diseases respond to climate through different mechanisms, three models:
+waterborne (ADD, Cholera, Acute Gastroenteritis), *Aedes* (Dengue,
+Chikungunya) and *Anopheles* (Malaria); AES excluded. All beat random
+(~3.3×, ~4.3×, ~11×). Climate gives no score gain for waterborne or
+*Aedes*, but the waterborne model uses same-month rain and the *Aedes*
+model last month's, reproducing H1. *Anopheles* has only 18 test positives,
+too few to judge.
 
 ---
 
@@ -216,3 +254,7 @@ Candidate approaches to consider:
 | 2026-09-28 | Tested H3 (`scripts/22_h3_temp_by_disease_test.py`): ANOVA assumptions fail (non-normal, unequal variances), but both ANOVA and Kruskal-Wallis reject H0. Effect is tiny (ε² ≈ 0.02); driven by Chikungunya (warmest) and AES (coolest), likely a geographic confound rather than a temperature preference. This also settles the open temperature question in section 4: only a weak effect. |
 | 2026-09-28 | Tested H4 (`scripts/23_h4_disease_region_test.py`): states grouped into 6 Zonal-Council regions; H0 rejected, Cramér's V 0.18 (medium-to-large). Strongest footprints: Chikungunya → South, AES → Northeast, Malaria → Central/Northeast, Cholera → North. All 36 state names mapped cleanly (no spelling variants), partly closing the name-consistency open item. |
 | 2026-09-28 | Tested H5 (`scripts/24_h5_monsoon_outbreak_test.py`): monsoon months average ~2.3× the outbreaks of other months; H0 rejected by both Welch's t-test and Mann-Whitney, with the largest effect of any hypothesis (Cohen's d 1.9, rank-biserial 0.81). All 5 hypotheses now tested. |
+| 2026-09-28 | Built the district × month outbreak model (`scripts/25_build_district_month_grid.py`, `scripts/26_train_outbreak_model.py`); decisions recorded in section 6. Canonicalized district names (795 → 764). Test 2019 PR-AUC ≈ 0.196 vs. 0.061 random for both logistic regression and gradient boosting; climate features add ≤ 0.004 PR-AUC over the no-climate baselines. District history is the dominant signal. |
+| 2026-09-28 | Added a Dengue-only model (`scripts/27_train_dengue_model.py`, gradient boosting). Test 2019 PR-AUC 0.169 vs. 0.034 random (~5×); no-climate baseline 0.183, so no measurable climate gain. Lag-1 rainfall is the top feature, consistent with H1, but substitutes for month. |
+| 2026-09-28 | Added transmission-route models (`scripts/28_train_route_models.py`): waterborne, *Aedes*, *Anopheles*. Test 2019 PR-AUC 0.130 / 0.185 / 0.093 vs. random 0.040 / 0.043 / 0.008. No climate gain for waterborne or *Aedes*; feature importance splits by route (waterborne → same-month rain, *Aedes* → last month's), matching H1. *Anopheles* has only 18 test positives, so it's inconclusive. |
+| 2026-09-28 | Dropped the Dengue-only model (`scripts/27_train_dengue_model.py` deleted): the *Aedes* model covers Dengue with twice the positives and matched its score. Kept the any-disease model (26) as a reference alongside the three route models. |

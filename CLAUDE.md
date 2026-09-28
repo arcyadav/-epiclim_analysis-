@@ -50,6 +50,15 @@ previous step's output:
    table, and saves it as a CSV in `data/`; results are written up in
    `EDA_FINDINGS.md`. Tests are limited to the course's set: t-test,
    Mann-Whitney, ANOVA, Kruskal-Wallis, chi-square, Pearson, Spearman.
+6. Modeling: `25_build_district_month_grid.py` → `data/district_month_grid.csv`
+   (canonical district names, constructed zero rows, features), then
+   `26_train_outbreak_model.py`, which reads that grid (not the imputed
+   CSV) and writes metrics/importance CSVs and a results plot.
+   `28_train_route_models.py` trains three transmission-route models
+   (waterborne / Aedes / Anopheles); it reads the same grid plus the
+   imputed CSV. Run 25 before 26 and 28. (27, a Dengue-only model, was
+   deliberately dropped — the Aedes model supersedes it.) Splits are temporal (train ≤2017, validate 2018, test 2019,
+   stress 2020–22); never use a random split, and keep features past-only.
 
 Numbering has gaps (e.g. 11, 12, 15 are missing) — some exploratory scripts
 were tried and deliberately deleted after review; this is expected, not a
