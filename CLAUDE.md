@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 EpiClim: an exploratory data analysis (EDA) project on a weekly, district-level
 Indian disease-surveillance dataset (dengue, malaria, cholera, etc.) joined
-with climate variables (precipitation, temperature, vegetation/LAI), 2009–2023.
+with climate variables (precipitation, temperature, vegetation/LAI),
+May 2009 – June 2022 (2022 is a partial year).
 This is a course project (project 1 of 4); modeling has not started yet — see
 `spec.md` for goals/status and `EDA_FINDINGS.md` for the full plot-by-plot
 writeup of what's been found so far. Both are living documents — read them
@@ -27,9 +28,9 @@ Run scripts **from the repository root** — every script hardcodes paths like
 `data/Final_data.csv` relative to the current working directory, not to the
 script's own location.
 
-Dependencies: pandas, numpy, matplotlib, scikit-learn (only for
-`LinearRegression` in the imputation step). No requirements file or lockfile
-exists yet; use whatever conda/venv environment already has these installed.
+Dependencies are listed in `requirements.txt` (`pip install -r
+requirements.txt`): pandas, numpy, matplotlib, scikit-learn (imputation and
+models), scipy (hypothesis tests). Minimum versions only, no lockfile.
 
 ## Architecture: the pipeline
 
@@ -79,8 +80,10 @@ plots rather than using matplotlib defaults.
 ## Data files and git
 
 Per `.gitignore`, the raw dataset (`data/Final_data.csv`) and all `scripts/`
-are committed, but everything derived/regenerable is gitignored: the cleaned
-and imputed CSVs, `dataset_profile.md`, and plot PNGs. Regenerate them by
+are committed, but everything derived/regenerable is gitignored: every
+`data/*.csv` except the raw file (cleaned/imputed data, hypothesis-test
+results, the model grid and metrics), `data/*.md` (`dataset_profile.md`),
+and all `data/*.png` plots. Regenerate them by
 re-running the pipeline rather than expecting them to already be in a fresh
 checkout. `EDA_FINDINGS.md` exists specifically because the PNGs themselves
 aren't committed — it's the durable record of what each plot showed.

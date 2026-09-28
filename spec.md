@@ -1,6 +1,6 @@
 # Project Spec: EpiClim — Climate-Health EDA & Modeling
 
-> **Status:** Data cleaning, EDA, hypothesis testing (H1–H5) and a first district × month outbreak model complete; see `EDA_FINDINGS.md` for all results. Writeup/presentation still to do.
+> **Status:** Analysis concluded (2026-09-28). Data cleaning, EDA, hypothesis testing (H1–H5) and district × month outbreak models (any-disease + three transmission-route models) are complete; see `EDA_FINDINGS.md` for all results. Only the writeup/presentation remains. Possible future work: neighbouring-district outbreak features, district-level rainfall (IMD/CHIRPS), population normalization, confusion matrices and bootstrap CIs for the model metrics.
 > **Course context:** Project 1 of 4 for this course
 > **Last updated:** 2026-09-28
 
@@ -12,7 +12,7 @@ This is a living document. Update it as decisions get made — don't let it drif
 
 **Type:** Data Science / Exploratory Data Analysis (EDA), with modeling to follow.
 
-**Working title:** TBD — something like *"Climate Drivers of Vector-Borne and Waterborne Disease Outbreaks in India (2009–2023)"*
+**Working title:** TBD — something like *"Climate Drivers of Vector-Borne and Waterborne Disease Outbreaks in India (2009–2022)"*
 
 **One-line pitch:** Explore how weekly, district-level climate variables (precipitation, temperature, vegetation) relate to disease outbreak patterns (dengue, malaria, acute diarrheal disease) across India, and build a model that captures/predicts that relationship.
 
@@ -27,7 +27,7 @@ This is a living document. Update it as decisions get made — don't let it drif
 | **Data file** | `Final_data.csv` (Zenodo record) |
 | **Size** | ~8,985 records, ~1.0 MB |
 | **Granularity** | District-level, weekly |
-| **Time span** | 2009–2023 |
+| **Time span** | May 2009 – June 2022 in the actual data (the Zenodo record describes it as 2009–2023; the last record is June 2022, so 2022 is a partial year) |
 | **License** | Dual-licensed: CC-BY-4.0 / MIT |
 | **DOI** | 10.5281/zenodo.14580510 (v1, published 2024-12-31) |
 | **Zenodo record** | https://zenodo.org/records/14580510 |
@@ -86,7 +86,7 @@ lumps the rest into `Other`:
 - [x] `Deaths` has missing values in raw data (seen in first rows) — confirm extent and handle
 - [x] Check for missing values per column, especially climate variables (`preci`, `LAI`, `Temp`) — see `data/dataset_profile.md`. Missingness: `Deaths` 71.6%, `LAI` 24.4%, `Temp` 10.4%, `preci` 1.5%
 - [ ] Check reporting completeness/consistency across years (surveillance quality may improve or change over time)
-- [ ] Check district/state name consistency (spelling variants, renamed districts, new UTs formed during 2009–2023 — e.g., J&K/Ladakh split in 2019)
+- [ ] Check district/state name consistency (spelling variants, renamed districts, new UTs formed during 2009–2022 — e.g., J&K/Ladakh split in 2019)
 - [x] Check for duplicate week/district/disease rows — 0 fully duplicated rows found (whole-row duplicate check only; a targeted week+district+disease duplicate check is still open)
 - [x] Temp is in Kelvin — convert to Celsius for interpretability — done in `02_clean_dataset.py`
 - [ ] Understand how `week_of_outbreak` aligns with `day`/`mon`/`year` — `week_of_outbreak` and `mon` correlate at 0.90 (expected, one derives from the other), but full alignment not yet verified
@@ -258,3 +258,4 @@ too few to judge.
 | 2026-09-28 | Added a Dengue-only model (`scripts/27_train_dengue_model.py`, gradient boosting). Test 2019 PR-AUC 0.169 vs. 0.034 random (~5×); no-climate baseline 0.183, so no measurable climate gain. Lag-1 rainfall is the top feature, consistent with H1, but substitutes for month. |
 | 2026-09-28 | Added transmission-route models (`scripts/28_train_route_models.py`): waterborne, *Aedes*, *Anopheles*. Test 2019 PR-AUC 0.130 / 0.185 / 0.093 vs. random 0.040 / 0.043 / 0.008. No climate gain for waterborne or *Aedes*; feature importance splits by route (waterborne → same-month rain, *Aedes* → last month's), matching H1. *Anopheles* has only 18 test positives, so it's inconclusive. |
 | 2026-09-28 | Dropped the Dengue-only model (`scripts/27_train_dengue_model.py` deleted): the *Aedes* model covers Dengue with twice the positives and matched its score. Kept the any-disease model (26) as a reference alongside the three route models. |
+| 2026-09-28 | Housekeeping: corrected the time span to May 2009 – June 2022; fixed EDA #11, which had grouped Cholera with the vector-borne diseases (it's waterborne); `.gitignore` now ignores all derived `data/*.csv`/`*.png`/`*.md` except the raw dataset; added `requirements.txt` (pandas, numpy, matplotlib, scikit-learn, scipy). |

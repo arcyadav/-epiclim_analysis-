@@ -206,16 +206,19 @@ stronger signal and replaced it.)
   going most negative by lag 5–6 (~-0.49) — tracks *current* rainfall, not
   a delayed effect.
 - **Cholera and Malaria** peak around lag 0–1 rather than showing a sharp
-  vector-borne delay, but decay more gradually than ADD.
+  one-month delay, but decay more gradually than ADD.
 - All correlations trend negative at long lags (4–6 months), likely just
   reflecting the seasonal cycle reversing rather than a causal effect.
-- **Why the lag differs by transmission route**: Acute Diarrhoeal Disease is
-  waterborne — contaminated drinking water and flooding from heavy rain
-  cause illness almost immediately, so it tracks *current* rainfall (lag 0).
-  The vector-borne diseases (Dengue, Chikungunya, Malaria, Cholera here)
+- **Why the lag differs by transmission route**: Acute Diarrhoeal Disease
+  and Cholera are waterborne — contaminated drinking water and flooding
+  from heavy rain cause illness almost immediately, so they track *current*
+  rainfall (lag 0). The *Aedes*-borne diseases (Dengue, Chikungunya)
   instead need mosquitoes to breed in standing water first, which takes
-  time — hence their peak correlation appears at a 1-month lag rather than
-  lag 0. The result lines up with this known biological mechanism.
+  time — hence their peak correlation appears at a 1-month lag. Malaria is
+  also mosquito-borne (*Anopheles*) but sits between the two (lag 0 and 1
+  nearly tied). The result lines up with this known biological mechanism,
+  and H1 below confirms it with significance tests. (An earlier version of
+  this note wrongly grouped Cholera with the vector-borne diseases.)
 
 ## 12. Disease-to-disease correlation
 **Script:** `18_disease_correlation_heatmap.py` → `data/disease_correlation_heatmap.png`
@@ -281,8 +284,7 @@ across the 10 disease × lag tests within each method.
   - *Aedes*-borne **Dengue and Chikungunya** are strongest at lag 1 — the
     mosquito-breeding delay.
   - Waterborne **ADD and Cholera** are strongest at lag 0 — contaminated
-    water acts immediately. (Note: Cholera is waterborne, not vector-borne
-    as the #11 writeup above groups it; this result fits that.)
+    water acts immediately.
   - **Malaria** is effectively tied between lags 0 and 1 (Δr ≈ 0.02), so it
     doesn't cleanly support either side.
 - Spearman is higher than Pearson for Malaria and Cholera lag 1, suggesting

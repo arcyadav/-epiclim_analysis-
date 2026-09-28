@@ -1,8 +1,9 @@
-# Generated data outputs (regenerate via scripts/)
-data/Final_data_cleaned.csv
-data/Final_data_imputed.csv
-data/dataset_profile.md
-data/correlation_heatmap.png
+# Generated data outputs (regenerate via scripts/) -- everything in data/
+# except the raw dataset
+data/*.csv
+data/*.png
+data/*.md
+!data/Final_data.csv
 
 # Python
 __pycache__/
