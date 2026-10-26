@@ -8,9 +8,9 @@ EpiClim: an exploratory data analysis (EDA) project on a weekly, district-level
 Indian disease-surveillance dataset (dengue, malaria, cholera, etc.) joined
 with climate variables (precipitation, temperature, vegetation/LAI),
 May 2009 – June 2022 (2022 is a partial year).
-This is a course project (project 1 of 4); modeling has not started yet — see
-`spec.md` for goals/status and `EDA_FINDINGS.md` for the full plot-by-plot
-writeup of what's been found so far. Both are living documents — read them
+This is a course project (project 1 of 4); EDA, hypothesis tests and models
+are done — see `spec.md` for goals/status and `EDA_FINDINGS.md` for the full
+writeup of every result. Both are living documents — read them
 before assuming the current state of the analysis, and update them (plus the
 Changelog at the bottom of `spec.md`) when you add or change EDA/modeling work,
 rather than duplicating findings only in code comments.
@@ -60,6 +60,12 @@ previous step's output:
    imputed CSV. Run 25 before 26 and 28. (27, a Dengue-only model, was
    deliberately dropped — the Aedes model supersedes it.) Splits are temporal (train ≤2017, validate 2018, test 2019,
    stress 2020–22); never use a random split, and keep features past-only.
+
+7. Deployment: `docs/` is the project website, served by GitHub Pages from
+   `main` / `docs`. `docs/index.html` is a hand-written static report of the
+   findings (numbers copied from `EDA_FINDINGS.md`), and `docs/img/` holds
+   copies of the plot PNGs from `data/` — committed, unlike `data/*.png`.
+   If a plot or result changes, re-copy the PNG and update the page text.
 
 Numbering has gaps (e.g. 11, 12, 15 are missing) — some exploratory scripts
 were tried and deliberately deleted after review; this is expected, not a

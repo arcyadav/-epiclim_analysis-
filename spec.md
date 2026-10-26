@@ -222,6 +222,8 @@ too few to judge.
 - [ ] EDA notebook/report
 - [ ] Final model + evaluation
 - [ ] Writeup / presentation
+- [x] Deployment (viva requirement): static report site in `docs/`, served by GitHub Pages
+- [ ] Transcript HTML (viva requirement): `/export transcript.md`, then convert to a turn-by-turn HTML page
 - *(Exact deliverable format depends on course requirements — TBD)*
 
 ---
@@ -259,3 +261,4 @@ too few to judge.
 | 2026-09-28 | Added transmission-route models (`scripts/28_train_route_models.py`): waterborne, *Aedes*, *Anopheles*. Test 2019 PR-AUC 0.130 / 0.185 / 0.093 vs. random 0.040 / 0.043 / 0.008. No climate gain for waterborne or *Aedes*; feature importance splits by route (waterborne → same-month rain, *Aedes* → last month's), matching H1. *Anopheles* has only 18 test positives, so it's inconclusive. |
 | 2026-09-28 | Dropped the Dengue-only model (`scripts/27_train_dengue_model.py` deleted): the *Aedes* model covers Dengue with twice the positives and matched its score. Kept the any-disease model (26) as a reference alongside the three route models. |
 | 2026-09-28 | Housekeeping: corrected the time span to May 2009 – June 2022; fixed EDA #11, which had grouped Cholera with the vector-borne diseases (it's waterborne); `.gitignore` now ignores all derived `data/*.csv`/`*.png`/`*.md` except the raw dataset; added `requirements.txt` (pandas, numpy, matplotlib, scikit-learn, scipy). |
+| 2026-10-26 | Viva requires every project to be deployed: added a static report website in `docs/` (`index.html` plus copies of all 15 plots in `docs/img/`) for GitHub Pages. Repo to be made public for Pages. |

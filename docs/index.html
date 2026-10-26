@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EpiClim Climate–Disease Analysis</title>
+<meta name="description" content="Exploratory analysis, hypothesis tests and outbreak models on India's weekly district-level disease surveillance data joined with climate variables, 2009–2022.">
+<style>
+  :root {
+    --surface: #fcfcfb;
+    --card: #ffffff;
+    --ink: #0b0b0b;
+    --text: #2b2a27;
+    --muted: #6f6d67;
+    --grid: #e1e0d9;
+    --accent: #2a78d6;
+    --accent-2: #eb6834;
+    --accent-3: #1baf7a;
+    --soft: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #161614;
+      --card: #1f1f1c;
+      --ink: #f4f3ef;
+      --text: #dcdad3;
+      --muted: #a3a097;
+      --grid: #34332f;
+      --accent: #6aa5ee;
+      --accent-2: #f08a5d;
+      --accent-3: #4cc799;
+      --soft: #262622;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface: #161614;
+    --card: #1f1f1c;
+    --ink: #f4f3ef;
+    --text: #dcdad3;
+    --muted: #a3a097;
+    --grid: #34332f;
+    --accent: #6aa5ee;
+    --accent-2: #f08a5d;
+    --accent-3: #4cc799;
+    --soft: #262622;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  header.hero { padding: 56px 0 32px; border-bottom: 1px solid var(--grid); }
+  .eyebrow { color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 8px; }
+  h1 { color: var(--ink); font-size: clamp(28px, 5vw, 42px); line-height: 1.15; margin: 0 0 16px; letter-spacing: -.01em; }
+  h2 { color: var(--ink); font-size: 26px; margin: 0 0 8px; letter-spacing: -.01em; }
+  h3 { color: var(--ink); font-size: 18px; margin: 28px 0 8px; }
+  .lede { font-size: 18px; max-width: 760px; margin: 0; }
+  .meta { color: var(--muted); font-size: 14px; margin-top: 16px; }
+  .meta a { color: var(--accent); }
+  nav.toc {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--surface); border-bottom: 1px solid var(--grid);
+  }
+  nav.toc ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 8px 0; overflow-x: auto; }
+  nav.toc a {
+    display: block; white-space: nowrap; padding: 6px 12px; border-radius: 999px;
+    color: var(--muted); text-decoration: none; font-size: 14px;
+  }
+  nav.toc a:hover { background: var(--soft); color: var(--ink); }
+  section { padding: 48px 0 8px; scroll-margin-top: 56px; }
+  .section-intro { color: var(--muted); max-width: 760px; margin: 0 0 24px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 32px 0 0; }
+  .stat { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 16px; }
+  .stat .num { color: var(--ink); font-size: 28px; font-weight: 650; line-height: 1.1; }
+  .stat .label { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .callout {
+    background: var(--card); border: 1px solid var(--grid); border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0;
+  }
+  .callout p { margin: 0; }
+  .callout strong { color: var(--ink); }
+  ul.findings { padding-left: 20px; }
+  ul.findings li { margin: 6px 0; }
+  .figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 16px 0; }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--grid); border-radius: 10px; overflow: hidden; }
+  figure.wide { grid-column: 1 / -1; }
+  figure a { display: block; background: #fcfcfb; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { padding: 12px 16px 14px; font-size: 14px; }
+  figcaption strong { color: var(--ink); display: block; margin-bottom: 2px; }
+  .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--grid); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 620px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; background: var(--soft); }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--ink); white-space: nowrap; }
+  .tag.yes { border: 1px solid var(--accent-3); }
+  .tag.warn { border: 1px solid var(--accent-2); }
+  code { font: 13px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 16px; overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+  .pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .step { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 14px 16px; }
+  .step .n { color: var(--accent); font-weight: 650; font-size: 13px; }
+  .step .t { color: var(--ink); font-weight: 600; margin: 2px 0 4px; }
+  .step p { margin: 0; font-size: 14px; color: var(--muted); }
+  footer { border-top: 1px solid var(--grid); margin-top: 56px; padding: 24px 0 48px; color: var(--muted); font-size: 14px; }
+  footer a { color: var(--accent); }
+  .theme-toggle {
+    position: fixed; right: 16px; bottom: 16px; z-index: 10;
+    background: var(--card); color: var(--ink); border: 1px solid var(--grid);
+    border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  @media (max-width: 600px) {
+    header.hero { padding-top: 36px; }
+    section { padding-top: 36px; }
+    .figs { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Project 1 · Exploratory data analysis, hypothesis testing &amp; modeling</p>
+    <h1>Does climate drive disease outbreaks in India?</h1>
+    <p class="lede">An analysis of <strong>EpiClim</strong>, India's weekly district-level disease surveillance
+      data (IDSP) joined with rainfall, temperature and vegetation. We explore outbreak patterns, test five
+      hypotheses, and ask whether climate can predict <em>when and where</em> outbreaks happen.</p>
+    <p class="meta">Data: <a href="https://zenodo.org/records/14580510">Zenodo 10.5281/zenodo.14580510</a> ·
+      Code: <a href="https://github.com/arcyadav/-epiclim_analysis-">github.com/arcyadav/-epiclim_analysis-</a></p>
+    <div class="stats">
+      <div class="stat"><div class="num">8,984</div><div class="label">outbreak records after cleaning</div></div>
+      <div class="stat"><div class="num">764</div><div class="label">districts (after merging name variants)</div></div>
+      <div class="stat"><div class="num">May 2009 – Jun 2022</div><div class="label">158 months of data</div></div>
+      <div class="stat"><div class="num">8</div><div class="label">disease groups (from 22 raw labels)</div></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <div class="wrap">
+    <ul>
+      <li><a href="#summary">Summary</a></li>
+      <li><a href="#data">Data</a></li>
+      <li><a href="#eda">EDA</a></li>
+      <li><a href="#hypotheses">Hypothesis tests</a></li>
+      <li><a href="#models">Models</a></li>
+      <li><a href="#limits">Limitations</a></li>
+      <li><a href="#reproduce">Reproduce</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section id="summary">
+  <h2>Key findings</h2>
+  <p class="section-intro">The short version: climate lines up strongly with <em>when</em> outbreaks happen, and the
+    timing depends on how each disease spreads. At region level, though, climate doesn't predict outbreaks any better
+    than the calendar and a district's own history.</p>
+  <div class="callout"><p><strong>1. The rainfall lag depends on the transmission route.</strong> Waterborne diseases
+    (Acute Diarrhoeal Disease, Cholera) track <em>this month's</em> rain. <em>Aedes</em>-borne Dengue and Chikungunya
+    track <em>last month's</em> rain, which is the mosquito breeding delay. Three independent methods agree: EDA
+    correlations, hypothesis test H1, and the feature importance of the transmission-route models.</p></div>
+  <div class="callout"><p><strong>2. Outbreaks are seasonal and monsoon-driven.</strong> All 8 diseases cluster in
+    certain months (H2), every peak falls in June–September, and monsoon months have about <strong>2.3×</strong> as many
+    outbreaks as other months (H5, Cohen's d = 1.9).</p></div>
+  <div class="callout"><p><strong>3. Diseases have distinct regional footprints.</strong> Chikungunya is concentrated
+    in the South (60% of its outbreaks), Acute Encephalitis Syndrome in the Northeast (46%), and Malaria in Central India
+    and the Northeast (H4, Cramér's V = 0.18).</p></div>
+  <div class="callout"><p><strong>4. Counting outbreaks beats counting cases.</strong> Total case counts are dominated by a few
+    extreme records (one 2009 Cholera record alone had 51,225 cases). Outbreak <em>counts</em> give a much steadier,
+    more climate-aligned signal, and changed several conclusions.</p></div>
+  <div class="callout"><p><strong>5. Models beat random by 3–4×, but climate adds no extra predictive power.</strong>
+    District × month models reach PR-AUC 0.13–0.19 against 0.04 for random guessing. Removing the climate features
+    barely changes the score: at region resolution, rainfall acts as a stand-in for the season rather than adding new
+    information.</p></div>
+</section>
+
+<section id="data">
+  <h2>Data &amp; preparation</h2>
+  <p class="section-intro">Each record is one reported outbreak: district, week, disease, cases, deaths, plus
+    precipitation, temperature and leaf area index (LAI) for that district and week.</p>
+  <div class="pipeline">
+    <div class="step"><div class="n">01 · Profile</div><div class="t">Column-by-column audit</div>
+      <p>Types, ranges, missingness: Deaths 71.6%, LAI 24.4%, Temp 10.4%, preci 1.5% missing.</p></div>
+    <div class="step"><div class="n">02 · Clean</div><div class="t">Fix and standardize</div>
+      <p>22 disease labels → 8 groups; dropped one malformed Cases row; Kelvin → °C.</p></div>
+    <div class="step"><div class="n">03 · Impute</div><div class="t">Fill climate gaps</div>
+      <p>Regression on location for Temp/LAI, median for preci; flags mark every imputed value.</p></div>
+    <div class="step"><div class="n">25 · Grid</div><div class="t">District × month table</div>
+      <p>Merged 795 name variants into 764 districts; built "no outbreak" rows for modeling.</p></div>
+  </div>
+  <p>Two data facts shape the whole analysis. The data actually <strong>ends in June 2022</strong>, so 2022 is a partial
+    year. And reporting <strong>collapsed in 2020</strong> (151 records vs. 570–1,110 per year before), most likely
+    COVID-era disruption to surveillance rather than less disease.</p>
+</section>
+
+<section id="eda">
+  <h2>Exploratory analysis</h2>
+  <p class="section-intro">Click any chart to open it full size.</p>
+
+  <h3>Time: seasonal outbreaks, spiky cases</h3>
+  <div class="figs">
+    <figure class="wide"><a href="img/outbreak_trends_by_disease.png"><img src="img/outbreak_trends_by_disease.png" loading="lazy" alt="Small multiples of monthly outbreak counts per disease, 2009 to 2022, each showing a repeating annual cycle."></a>
+      <figcaption><strong>Monthly outbreak counts by disease</strong>Counted as records rather than cases, ADD, Dengue,
+        Chikungunya, Cholera and Malaria all show a repeating annual cycle that case totals hid.</figcaption></figure>
+    <figure><a href="img/outbreak_trends.png"><img src="img/outbreak_trends.png" loading="lazy" alt="Total monthly outbreak count and climate variables over time, with a regular annual wave peaking June to August."></a>
+      <figcaption><strong>Overall outbreak count</strong>A regular annual wave peaking June–August, matching
+        rainfall; peaks shrink after 2016 and collapse in 2020.</figcaption></figure>
+    <figure><a href="img/disease_trends.png"><img src="img/disease_trends.png" loading="lazy" alt="Small multiples of monthly case totals per disease, dominated by isolated spikes."></a>
+      <figcaption><strong>Monthly case totals by disease</strong>By contrast, case totals are dominated by isolated
+        spikes: Cholera 2009, Dengue 2015, Malaria 2015/2018.</figcaption></figure>
+    <figure><a href="img/time_trends.png"><img src="img/time_trends.png" loading="lazy" alt="Total cases per month alongside mean temperature, precipitation and LAI per month."></a>
+      <figcaption><strong>Cases vs. climate over time</strong>Climate variables show a clean monsoon cycle; total
+        cases don't.</figcaption></figure>
+    <figure><a href="img/cases_by_year.png"><img src="img/cases_by_year.png" loading="lazy" alt="Bar charts of records and cases per year, with 2020 and 2022 the lowest."></a>
+      <figcaption><strong>Reporting volume by year</strong>2020 (COVID) and 2022 (data ends in June) are clear
+        anomalies; 2015's case spike is the Dengue epidemic.</figcaption></figure>
+  </div>
+
+  <h3>Season: which month each disease peaks</h3>
+  <div class="figs">
+    <figure class="wide"><a href="img/seasonality_heatmap.png"><img src="img/seasonality_heatmap.png" loading="lazy" alt="Heatmap of each disease's share of annual cases by month, with rows for temperature, precipitation and LAI."></a>
+      <figcaption><strong>Disease × month seasonality</strong>Rainfall peaks June–August, and so do ADD and Dengue
+        cases; temperature peaks April–May; vegetation (LAI) lags rainfall by about two months.</figcaption></figure>
+    <figure class="wide"><a href="img/precip_lag_correlation_outbreak_count.png"><img src="img/precip_lag_correlation_outbreak_count.png" loading="lazy" alt="Line chart of correlation between rainfall and outbreak count at lags of 0 to 6 months, per disease."></a>
+      <figcaption><strong>Rainfall lag</strong>Dengue and Chikungunya correlate most with rainfall one month earlier;
+        ADD with same-month rainfall. This became hypothesis H1.</figcaption></figure>
+  </div>
+
+  <h3>Place: where each disease happens</h3>
+  <div class="figs">
+    <figure class="wide"><a href="img/disease_location_small_multiples.png"><img src="img/disease_location_small_multiples.png" loading="lazy" alt="Map panels of district outbreak locations, one per disease, each with a different geographic footprint."></a>
+      <figcaption><strong>Hotspots by disease</strong>Each disease has its own footprint: ADD everywhere,
+        Chikungunya in the south, AES in the northeast, Cholera in West Bengal and Punjab/J&amp;K.</figcaption></figure>
+    <figure><a href="img/disease_location_scatter.png"><img src="img/disease_location_scatter.png" loading="lazy" alt="Bubble map of districts colored by dominant disease and sized by total cases."></a>
+      <figcaption><strong>Dominant disease per district</strong>ADD dominates 514 of 791 districts; the map's
+        outline confirms the coordinates are correct.</figcaption></figure>
+    <figure><a href="img/cases_by_state.png"><img src="img/cases_by_state.png" loading="lazy" alt="Horizontal bar chart of total cases by state, led by West Bengal."></a>
+      <figcaption><strong>Cases by state</strong>West Bengal leads with about 179K cases, more than double Delhi;
+        small states report near zero.</figcaption></figure>
+  </div>
+
+  <h3>Distributions &amp; correlations</h3>
+  <div class="figs">
+    <figure><a href="img/cases_by_disease_boxplot.png"><img src="img/cases_by_disease_boxplot.png" loading="lazy" alt="Box plot of cases per record by disease on a log scale."></a>
+      <figcaption><strong>Outbreak size by disease</strong>Typical outbreaks are small for every disease (medians
+        9–35 cases); large totals come from rare extreme events.</figcaption></figure>
+    <figure><a href="img/correlation_heatmap.png"><img src="img/correlation_heatmap.png" loading="lazy" alt="Correlation heatmap of numeric columns."></a>
+      <figcaption><strong>Numeric correlations</strong>Temperature relates to LAI, rainfall and location, which
+        guided imputation; cases correlate with almost nothing directly.</figcaption></figure>
+    <figure><a href="img/disease_correlation_heatmap.png"><img src="img/disease_correlation_heatmap.png" loading="lazy" alt="Correlation heatmap between the eight diseases' monthly outbreak counts."></a>
+      <figcaption><strong>Disease-to-disease correlation</strong>Mostly positive, but that's the shared monsoon
+        season, not real co-occurrence; Chikungunya stays the most independent.</figcaption></figure>
+  </div>
+</section>
+
+<section id="hypotheses">
+  <h2>Hypothesis tests</h2>
+  <p class="section-intro">Five hypotheses, together using all seven of the course's tests. Every test reports an
+    effect size as well as a p-value: with about 9,000 rows almost anything is "significant", so the effect size says
+    whether it matters. Multiple tests within a hypothesis are corrected (Holm or Bonferroni).</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Hypothesis</th><th>Tests</th><th>Result</th><th>Effect size</th></tr></thead>
+      <tbody>
+        <tr><td>H1</td><td>Rainfall lag differs by transmission route</td><td>Pearson, Spearman</td>
+          <td><span class="tag yes">H₀ rejected</span> for all 5 diseases. Dengue/Chikungunya strongest at lag 1;
+            ADD/Cholera at lag 0; Malaria roughly tied. Pearson and Spearman agree.</td>
+          <td class="num">r = 0.20 – 0.58</td></tr>
+        <tr><td>H2</td><td>Each disease's outbreaks are seasonal</td><td>Chi-square goodness-of-fit</td>
+          <td><span class="tag yes">H₀ rejected</span> for all 8 diseases; every peak month is in June–September.
+            Chikungunya weakest (one 2011–12 epidemic wave).</td>
+          <td class="num">Cramér's V 0.10 – 0.26</td></tr>
+        <tr><td>H3</td><td>Diseases occur at different temperatures</td><td>ANOVA, Kruskal-Wallis, Mann-Whitney post-hoc</td>
+          <td><span class="tag warn">Rejected, tiny effect</span> ANOVA assumptions fail, so Kruskal-Wallis is
+            trusted; both reject. Chikungunya warmest, AES coolest, likely because of where they occur.</td>
+          <td class="num">ε² = 0.019</td></tr>
+        <tr><td>H4</td><td>Disease type depends on region</td><td>Chi-square independence</td>
+          <td><span class="tag yes">H₀ rejected</span> χ²(30) = 1440. Chikungunya → South, AES → Northeast, Malaria →
+            Central/Northeast, Cholera → North.</td>
+          <td class="num">Cramér's V = 0.18</td></tr>
+        <tr><td>H5</td><td>More outbreaks in monsoon months</td><td>Welch t-test, Mann-Whitney U</td>
+          <td><span class="tag yes">H₀ rejected</span> Median 95 vs. 35 outbreaks per month. Counts are skewed, so
+            Mann-Whitney is the more trustworthy test; both agree.</td>
+          <td class="num">d = 1.91, r = 0.81</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="models">
+  <h2>Predicting outbreaks</h2>
+  <p class="section-intro">Forecasting national totals isn't viable (158 months, distorted final years). Instead each
+    model predicts: <em>will this district report an outbreak this month?</em> Every model is compared with the same
+    model <strong>without climate features</strong>, to measure what climate adds.</p>
+  <div class="pipeline">
+    <div class="step"><div class="n">Target</div><div class="t">District × month, yes/no</div>
+      <p>About 5% of district-months have an outbreak.</p></div>
+    <div class="step"><div class="n">Features</div><div class="t">Past-only</div>
+      <p>Month, region, location, regional rainfall/temperature (this and last month), the district's own outbreak history.</p></div>
+    <div class="step"><div class="n">Split</div><div class="t">By time, never random</div>
+      <p>Train 2009–2017 · tune on 2018 · test on 2019 · stress-test 2020–22.</p></div>
+    <div class="step"><div class="n">Metric</div><div class="t">PR-AUC</div>
+      <p>Accuracy is meaningless here: always guessing "no" scores ~95%.</p></div>
+  </div>
+
+  <h3>Transmission-route models (gradient boosting)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Model</th><th>Diseases</th><th>Districts</th><th>Random</th><th>No climate</th><th>With climate</th><th>ROC-AUC</th></tr></thead>
+      <tbody>
+        <tr><td>Waterborne</td><td>ADD, Cholera, Acute Gastroenteritis</td><td class="num">611</td><td class="num">0.040</td><td class="num">0.133</td><td class="num">0.130</td><td class="num">0.744</td></tr>
+        <tr><td><em>Aedes</em> mosquito</td><td>Dengue, Chikungunya</td><td class="num">315</td><td class="num">0.043</td><td class="num">0.187</td><td class="num">0.185</td><td class="num">0.813</td></tr>
+        <tr><td><em>Anopheles</em> mosquito</td><td>Malaria</td><td class="num">184</td><td class="num">0.008</td><td class="num">0.058</td><td class="num">0.093</td><td class="num">0.865</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:14px;color:var(--muted);margin-top:-4px">PR-AUC on the 2019 test year, except the last column (ROC-AUC, with climate).
+    <em>Anopheles</em> has only 18 test outbreaks, too few to judge.</p>
+  <div class="figs">
+    <figure class="wide"><a href="img/route_model_results.png"><img src="img/route_model_results.png" loading="lazy" alt="Three precision-recall curves and three feature-importance bar charts, one pair per transmission-route model."></a>
+      <figcaption><strong>Precision-recall and feature importance per route</strong>The waterborne model relies on
+        same-month rain; the <em>Aedes</em> model's top feature is last month's rain, reproducing H1 with a
+        completely different method.</figcaption></figure>
+  </div>
+
+  <h3>Reference: any-disease model</h3>
+  <p>One model for any outbreak, comparing logistic regression and gradient boosting. Both reach PR-AUC ≈ 0.196 against
+    0.061 for random (about 3.2×), with or without climate. It's mostly an ADD model, since ADD is 57% of records,
+    which is why the route-specific models were built.</p>
+  <div class="figs">
+    <figure class="wide"><a href="img/outbreak_model_results.png"><img src="img/outbreak_model_results.png" loading="lazy" alt="Precision-recall curves for four any-disease models, and a feature-importance bar chart."></a>
+      <figcaption><strong>Any-disease model</strong>All four variants overlap. District history (long-run rate,
+        past-12-month count) is the strongest signal.</figcaption></figure>
+  </div>
+
+  <div class="callout"><p><strong>What the models tell us.</strong> Climate and outbreaks move together (H1, H2, H5),
+    but region-level climate carries no information beyond "what month is it" and "has this district had outbreaks
+    before". When climate features are added, the models use rainfall <em>instead of</em> the month, not on top of
+    it. At the chosen cut-off, about 1 in 4 alerts is a real outbreak: useful as a ranking, not as a stand-alone
+    early-warning system.</p></div>
+</section>
+
+<section id="limits">
+  <h2>Limitations &amp; future work</h2>
+  <ul class="findings">
+    <li><strong>Reported, not actual, outbreaks.</strong> The data only contains outbreaks that were reported, so a
+      missing record may mean "not reported" rather than "no outbreak". Surveillance capacity varies by state and year.</li>
+    <li><strong>Raw counts, not rates.</strong> Districts aren't normalized by population.</li>
+    <li><strong>Coarse climate.</strong> Climate exists only on outbreak rows, so the models use regional monthly
+      averages. District-level rainfall (IMD gridded data or CHIRPS) is the obvious next step.</li>
+    <li><strong>Autocorrelation.</strong> Consecutive months aren't independent, so time-series p-values are
+      optimistic; effect sizes are the fairer guide.</li>
+    <li><strong>Deaths unusable.</strong> 71.6% missing, filled with 0, so fatality rates weren't analyzed.</li>
+    <li><strong>Future work:</strong> neighbouring-district outbreak features, population normalization, confusion
+      matrices and bootstrap confidence intervals for model metrics.</li>
+  </ul>
+</section>
+
+<section id="reproduce">
+  <h2>Reproduce</h2>
+  <p>Every result regenerates from the raw dataset. Run the numbered scripts from the repository root:</p>
+<pre>pip install -r requirements.txt
+python scripts/01_profile_dataset.py        # profile
+python scripts/02_clean_dataset.py          # clean
+python scripts/03_impute_dataset.py         # impute
+python scripts/04_correlation_heatmap.py    # ... EDA plots 04–19
+python scripts/20_h1_precip_lag_test.py     # ... hypothesis tests 20–24
+python scripts/25_build_district_month_grid.py
+python scripts/26_train_outbreak_model.py
+python scripts/28_train_route_models.py</pre>
+  <p>Full plot-by-plot findings are in
+    <a href="https://github.com/arcyadav/-epiclim_analysis-/blob/main/EDA_FINDINGS.md">EDA_FINDINGS.md</a>, and the
+    project decisions in <a href="https://github.com/arcyadav/-epiclim_analysis-/blob/main/spec.md">spec.md</a>.</p>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    EpiClim analysis · Course project 1 of 4 · Data: Integrated Disease Surveillance Programme (IDSP), via
+    <a href="https://zenodo.org/records/14580510">Zenodo</a> (CC-BY-4.0 / MIT).
+  </div>
+</footer>
+
+<button class="theme-toggle" type="button" aria-label="Toggle dark mode">Toggle theme</button>
+<script>
+  (function () {
+    var root = document.documentElement;
+    try {
+      var saved = localStorage.getItem("theme");
+      if (saved) root.setAttribute("data-theme", saved);
+    } catch (e) {}
+    document.querySelector(".theme-toggle").addEventListener("click", function () {
+      var current = root.getAttribute("data-theme") ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      var next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("theme", next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>
