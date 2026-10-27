@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EpiClim Viva Prep</title>
+<meta name="description" content="Viva preparation guide for Project 1 (EpiClim): the project story, data decisions, theory of every statistical test and model used, results, and likely viva questions with answers.">
+<style>
+  :root {
+    --surface: #fcfcfb; --card: #ffffff; --ink: #0b0b0b; --text: #2b2a27; --muted: #6f6d67;
+    --grid: #e1e0d9; --soft: #f3f2ee; --accent: #2a78d6; --accent-2: #eb6834; --accent-3: #1baf7a;
+    --tip: #eef4fc; --warn: #fdf1ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #161614; --card: #1f1f1c; --ink: #f4f3ef; --text: #dcdad3; --muted: #a3a097;
+      --grid: #34332f; --soft: #262622; --accent: #6aa5ee; --accent-2: #f08a5d; --accent-3: #4cc799;
+      --tip: #1c2633; --warn: #2e221b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface: #161614; --card: #1f1f1c; --ink: #f4f3ef; --text: #dcdad3; --muted: #a3a097;
+    --grid: #34332f; --soft: #262622; --accent: #6aa5ee; --accent-2: #f08a5d; --accent-3: #4cc799;
+    --tip: #1c2633; --warn: #2e221b;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--surface); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+  aside { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 28px 16px; border-right: 1px solid var(--grid); }
+  aside .brand { color: var(--ink); font-weight: 650; margin: 0 0 4px; }
+  aside .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  aside ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  aside li a { display: block; padding: 6px 10px; border-radius: 6px; color: var(--text); text-decoration: none; font-size: 14px; }
+  aside li a:hover { background: var(--soft); color: var(--ink); }
+  main { padding: 40px 32px 80px; min-width: 0; }
+  h1 { color: var(--ink); font-size: clamp(28px, 4.5vw, 40px); line-height: 1.15; margin: 0 0 12px; letter-spacing: -.01em; }
+  h2 { color: var(--ink); font-size: 26px; margin: 0 0 12px; padding-top: 8px; letter-spacing: -.01em; }
+  h3 { color: var(--ink); font-size: 19px; margin: 28px 0 8px; }
+  h4 { color: var(--ink); font-size: 16px; margin: 18px 0 6px; }
+  section { padding: 40px 0 8px; border-bottom: 1px solid var(--grid); scroll-margin-top: 8px; }
+  .lede { font-size: 18px; max-width: 760px; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); }
+  .box { border: 1px solid var(--grid); border-radius: 10px; padding: 14px 18px; margin: 14px 0; background: var(--card); }
+  .box.tip { background: var(--tip); border-left: 4px solid var(--accent); }
+  .box.warn { background: var(--warn); border-left: 4px solid var(--accent-2); }
+  .box.key { border-left: 4px solid var(--accent-3); }
+  .box p:first-child { margin-top: 0; } .box p:last-child { margin-bottom: 0; }
+  .box strong { color: var(--ink); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0; }
+  .stat { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 12px 14px; }
+  .stat .num { color: var(--ink); font-size: 22px; font-weight: 650; line-height: 1.15; }
+  .stat .label { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  .table-wrap { overflow-x: auto; margin: 12px 0; border: 1px solid var(--grid); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 560px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; background: var(--soft); }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  code, .f { font: 13.5px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+  .formula { display: block; font: 14px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--soft);
+    border-radius: 8px; padding: 10px 14px; margin: 8px 0; overflow-x: auto; white-space: pre; color: var(--ink); }
+  .test-card { background: var(--card); border: 1px solid var(--grid); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .test-card h3 { margin-top: 0; }
+  .pill { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--soft); color: var(--ink); margin-right: 4px; }
+  dl.facts { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; margin: 10px 0; font-size: 15px; }
+  dl.facts dt { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
+  dl.facts dd { margin: 0; }
+  .qa-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 8px; }
+  button { background: var(--card); color: var(--ink); border: 1px solid var(--grid); border-radius: 999px;
+    padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover { background: var(--soft); }
+  input[type="search"] { flex: 1 1 220px; min-width: 0; background: var(--card); color: var(--ink); border: 1px solid var(--grid);
+    border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 14px; }
+  .qgroup h3 { margin-top: 26px; }
+  details.qa { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; margin: 8px 0; }
+  details.qa summary { cursor: pointer; padding: 11px 16px; color: var(--ink); font-weight: 600; list-style: none; }
+  details.qa summary::-webkit-details-marker { display: none; }
+  details.qa summary::before { content: "Q" counter(q) ". "; color: var(--accent); }
+  .qbank { counter-reset: q; }
+  details.qa { counter-increment: q; }
+  details.qa[open] summary { border-bottom: 1px solid var(--grid); }
+  details.qa .a { padding: 10px 16px 14px; }
+  details.qa .a p { margin: 6px 0; }
+  details.qa .a ul { margin: 6px 0; padding-left: 20px; }
+  .hidden { display: none !important; }
+  .theme-toggle { position: fixed; right: 16px; bottom: 16px; z-index: 10; }
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--grid); padding: 20px 16px; }
+    aside ol { display: flex; flex-wrap: wrap; gap: 2px; }
+    main { padding: 24px 16px 64px; }
+    dl.facts { grid-template-columns: 1fr; gap: 2px; }
+    dl.facts dd { margin-bottom: 8px; }
+  }
+  @media print {
+    aside, .qa-tools, .theme-toggle { display: none; }
+    .layout { display: block; }
+    details.qa .a { display: block !important; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside aria-label="Sections">
+  <p class="brand">EpiClim Viva Prep</p>
+  <p class="sub">Project 1 of 4 · climate &amp; disease outbreaks in India</p>
+  <ol>
+    <li><a href="#pitch">1. The project in 2 minutes</a></li>
+    <li><a href="#data">2. Data &amp; preparation</a></li>
+    <li><a href="#eda">3. EDA findings</a></li>
+    <li><a href="#basics">4. Hypothesis-testing basics</a></li>
+    <li><a href="#tests">5. The 7 tests</a></li>
+    <li><a href="#hyp">6. Our 5 hypotheses</a></li>
+    <li><a href="#ml">7. Modeling theory</a></li>
+    <li><a href="#models">8. Our models &amp; results</a></li>
+    <li><a href="#limits">9. Limitations</a></li>
+    <li><a href="#qa">10. Viva questions</a></li>
+    <li><a href="#numbers">11. Numbers to remember</a></li>
+  </ol>
+</aside>
+
+<main>
+<header>
+  <h1>Viva preparation: EpiClim climate–disease analysis</h1>
+  <p class="lede">Everything needed to explain and defend Project 1: what we did and why, the theory behind every
+    test and model, our results, and the questions an examiner is likely to ask, with answers.</p>
+  <p class="muted">Live project: <a href="https://arcyadav.github.io/-epiclim_analysis-/">arcyadav.github.io/-epiclim_analysis-</a> ·
+    Code: <a href="https://github.com/arcyadav/-epiclim_analysis-">github.com/arcyadav/-epiclim_analysis-</a></p>
+</header>
+
+<!-- ============================================================ -->
+<section id="pitch">
+  <h2>1. The project in 2 minutes</h2>
+  <div class="box key">
+    <p><strong>Say this if asked "explain your project":</strong></p>
+    <p>"We analysed <strong>EpiClim</strong>, India's weekly, district-level disease surveillance data from the
+      Integrated Disease Surveillance Programme (IDSP), joined with rainfall, temperature and vegetation (LAI). It has
+      about 9,000 outbreak records from May 2009 to June 2022, across 8 disease groups such as Acute Diarrhoeal
+      Disease, Dengue, Malaria and Cholera.</p>
+    <p>We cleaned and imputed the data, did exploratory analysis, tested five hypotheses with standard statistical
+      tests, and built models to predict whether a district will report an outbreak in a given month.</p>
+    <p>The main finding is that <strong>the delay between rain and outbreaks depends on how a disease spreads</strong>.
+      Waterborne diseases follow the same month's rain; mosquito-borne Dengue and Chikungunya follow the previous
+      month's, because mosquitoes need time to breed. Three independent methods showed this. Outbreaks are strongly
+      seasonal (monsoon months have about 2.3× as many), and each disease has its own regional footprint.</p>
+    <p>Our models beat random guessing by 3–4×, but adding climate features didn't improve them: at regional
+      resolution, rainfall only carries the seasonal pattern that the month and a district's own history already
+      capture."</p>
+  </div>
+  <h3>The storyline (in order)</h3>
+  <ol>
+    <li><strong>Data preparation:</strong> profile → clean → impute (with flags) → canonicalize district names.</li>
+    <li><strong>EDA:</strong> trends, seasonality, maps, distributions. Key discovery: <em>count outbreaks, not cases</em>.</li>
+    <li><strong>Hypothesis testing:</strong> 5 hypotheses using all 7 course tests, with effect sizes and corrections.</li>
+    <li><strong>Modeling:</strong> district × month classifiers, each compared with a no-climate baseline.</li>
+    <li><strong>Deployment:</strong> static report website on GitHub Pages.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="data">
+  <h2>2. Data &amp; preparation</h2>
+  <div class="stats">
+    <div class="stat"><div class="num">8,985 → 8,984</div><div class="label">records (1 bad row dropped)</div></div>
+    <div class="stat"><div class="num">158</div><div class="label">months, May 2009 – Jun 2022</div></div>
+    <div class="stat"><div class="num">795 → 764</div><div class="label">districts after name cleanup</div></div>
+    <div class="stat"><div class="num">22 → 8</div><div class="label">disease labels → groups</div></div>
+  </div>
+  <dl class="facts">
+    <dt>Source</dt><dd>EpiClim, Zenodo DOI 10.5281/zenodo.14580510. Underlying data from IDSP (India's Integrated Disease Surveillance Programme). License CC-BY-4.0 / MIT.</dd>
+    <dt>One row is</dt><dd>One <strong>reported outbreak</strong>: a district, a week, a disease, its cases and deaths, plus that district's climate that week.</dd>
+    <dt>Columns</dt><dd><code>week_of_outbreak</code>, <code>state_ut</code>, <code>district</code>, <code>Disease</code>, <code>Cases</code>, <code>Deaths</code>, <code>day/mon/year</code>, <code>Latitude/Longitude</code>, <code>preci</code> (rainfall), <code>LAI</code> (leaf area index, vegetation), <code>Temp</code>.</dd>
+    <dt>Diseases</dt><dd>ADD 5,126 · Dengue 1,618 · Chikungunya 731 · Cholera 666 · Malaria 544 · AES 111 · Acute Gastroenteritis 100 · Other 88.</dd>
+  </dl>
+
+  <h3>Preparation decisions, and why</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Step</th><th>What we did</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Profile</td><td>Checked type, missingness and range of every column.</td><td>Found <code>Cases</code> stored as text, 22 near-duplicate disease labels, and missing Deaths 71.6%, LAI 24.4%, Temp 10.4%, preci 1.5%.</td></tr>
+      <tr><td>Disease labels</td><td>Kept the 7 well-populated labels; everything else → "Other".</td><td>Variants like "Dengue Fever", "Suspected Dengue" had too few records to analyse separately.</td></tr>
+      <tr><td>Bad row</td><td>Dropped the one row with <code>Cases = "3/1"</code>.</td><td>Ambiguous value (date? ratio?) that can't be interpreted; losing 1 of 8,985 rows is negligible.</td></tr>
+      <tr><td>Deaths</td><td>Missing → 0.</td><td>Assumed "no deaths reported". Because it's 71.6% missing, we <em>did not</em> analyse deaths or fatality rates.</td></tr>
+      <tr><td>Temp</td><td>Kelvin → Celsius (−273.15).</td><td>Interpretability.</td></tr>
+      <tr><td>Temp imputation</td><td>Linear regression on Latitude + Longitude (R² ≈ 0.17).</td><td>Temperature depends on location (correlation heatmap), so this beats a flat mean. R² is modest, so H3 used <em>measured</em> temperatures only.</td></tr>
+      <tr><td>LAI imputation</td><td>Linear regression on Latitude + Longitude + Temp (R² ≈ 0.20), clipped at 0.</td><td>LAI correlates with Temp (−0.44) and location. LAI can't be negative.</td></tr>
+      <tr><td>preci imputation</td><td>Median fill.</td><td>Only 1.5% missing, and rainfall is skewed, so median beats mean.</td></tr>
+      <tr><td>Flags</td><td><code>Temp_imputed</code>, <code>LAI_imputed</code>, <code>preci_imputed</code>.</td><td>So later analysis can exclude or check imputed values; we did exactly that in H3 and the models.</td></tr>
+      <tr><td>District names</td><td>Merged spelling/case variants (795 → 764); 2 manual merges (Karbi-Anglong (Diphu) → Karbi Anglong; Rangareddy AP → Telangana after 2014).</td><td>The model's history features need one consistent name per district.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box warn">
+    <p><strong>Data facts you must know</strong></p>
+    <ul>
+      <li><strong>The data ends in June 2022</strong> (although the dataset is described as 2009–2023), so 2022 is a partial year.</li>
+      <li><strong>2020 reporting collapsed</strong>: 151 records vs. 570–1,110 per year before, most likely COVID disruption of surveillance, not less disease.</li>
+      <li><strong>The 2009 Cholera outlier</strong>: South 24 Parganas, West Bengal, 51,225 cases in one week (the next highest Cholera record is 9,689). Present in the raw file; kept, because we can't verify whether it's real or an error. It's the reason we count outbreaks instead of cases.</li>
+      <li><strong>Only outbreaks are recorded.</strong> There are no rows for "no outbreak", so for modeling we had to construct them.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="eda">
+  <h2>3. EDA findings</h2>
+  <div class="box key"><p><strong>Most important methodological insight: outbreak count beats case count.</strong>
+    Total cases are dominated by a handful of extreme records, so case charts look spiky and random. Counting outbreak
+    <em>records</em> reveals a clean, repeating annual cycle that matches rainfall. It changed several conclusions, e.g.
+    Cholera's seasonal peak and the West Bengal Cholera "hotspot" (which was driven by the 2009 outlier).</p></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Analysis</th><th>What it showed</th></tr></thead>
+    <tbody>
+      <tr><td>Correlation heatmap</td><td>Temp correlates with LAI (−0.44), rainfall (−0.39), longitude (−0.37): guided imputation. Cases correlate with almost nothing directly.</td></tr>
+      <tr><td>Time trends (cases)</td><td>Climate has a clean monsoon cycle; total cases don't. Spikes: Cholera 2009, Dengue 2015, Malaria 2015/2018.</td></tr>
+      <tr><td>Outbreak-count trends</td><td>A regular annual wave peaking June–August. Declining after 2016, collapse in 2020.</td></tr>
+      <tr><td>Seasonality heatmap</td><td>Rain peaks Jun–Aug; ADD and Dengue too. Temperature peaks Apr–May. LAI lags rain by ~2 months.</td></tr>
+      <tr><td>Hotspot maps</td><td>ADD everywhere; Dengue north + south clusters; Chikungunya south; AES northeast; Cholera West Bengal + Punjab/J&amp;K; Malaria central/east/northeast.</td></tr>
+      <tr><td>Box plot of cases</td><td>Typical outbreaks are small for every disease (medians 9–35). Big totals come from rare extreme events. AES has the lowest median (9).</td></tr>
+      <tr><td>State totals</td><td>West Bengal ~179K cases, more than double Delhi (~81K). Small states near zero (population + surveillance capacity).</td></tr>
+      <tr><td>Rainfall-lag correlation</td><td>Dengue (0.52) and Chikungunya (0.30) peak at lag 1; ADD peaks at lag 0 (0.58). → became H1.</td></tr>
+      <tr><td>Disease-to-disease correlation</td><td>Mostly positive, but that's a <strong>confound</strong>: all diseases share the monsoon season. Not evidence of real co-occurrence. Chikungunya the most independent.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="basics">
+  <h2>4. Hypothesis-testing basics</h2>
+  <div class="grid2">
+    <div class="box">
+      <p><strong>Null hypothesis (H₀)</strong>: the "nothing is happening" claim, e.g. "outbreaks are spread evenly across months".</p>
+      <p><strong>Alternative (H₁)</strong>: what we suspect, e.g. "outbreaks cluster in certain months".</p>
+      <p>We assume H₀ is true and ask how surprising our data would be.</p>
+    </div>
+    <div class="box">
+      <p><strong>p-value</strong>: the probability of seeing data at least this extreme <em>if H₀ were true</em>.</p>
+      <p>If p &lt; α (we used <strong>α = 0.05</strong>), we reject H₀.</p>
+      <p class="muted">It is <em>not</em> the probability that H₀ is true, and not the size of the effect.</p>
+    </div>
+    <div class="box">
+      <p><strong>Type I error</strong> (false positive): rejecting a true H₀. Its probability is α.</p>
+      <p><strong>Type II error</strong> (false negative): failing to reject a false H₀. Probability β; <strong>power</strong> = 1 − β.</p>
+    </div>
+    <div class="box">
+      <p><strong>One-sided vs two-sided</strong>: one-sided tests a specific direction ("monsoon is <em>higher</em>", H5);
+        two-sided tests any difference. Use one-sided only when the direction was stated before looking at the data.</p>
+    </div>
+  </div>
+
+  <h3>Parametric vs non-parametric</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Parametric</th><th>Non-parametric</th></tr></thead>
+    <tbody>
+      <tr><td>Assumes</td><td>A distribution (usually normal), often equal variances</td><td>No specific distribution; works on ranks or counts</td></tr>
+      <tr><td>Compares</td><td>Means</td><td>Ranks / medians / distributions</td></tr>
+      <tr><td>Examples (ours)</td><td>t-test, ANOVA, Pearson</td><td>Mann-Whitney U, Kruskal-Wallis, Spearman, chi-square</td></tr>
+      <tr><td>Use when</td><td>Data roughly normal, no big outliers</td><td>Skewed data, outliers, ordinal data — like our <code>Cases</code> and outbreak counts</td></tr>
+      <tr><td>Trade-off</td><td>More power if assumptions hold</td><td>Robust, slightly less power if data really is normal</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Assumption checks we used:</strong> <strong>Shapiro-Wilk</strong> (H₀: data is normal; small p → not normal)
+    and <strong>Levene</strong> (H₀: groups have equal variances; small p → unequal).</p>
+
+  <h3>Effect size: why p-values aren't enough</h3>
+  <div class="box tip"><p>With ~9,000 rows, even a <em>tiny</em> difference gives a tiny p-value. The p-value says
+    "is there an effect?"; the <strong>effect size</strong> says "how big is it?". H3 is the perfect example:
+    p ≈ 10⁻³¹ but temperature explains only ~2% of the variation.</p></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Effect size</th><th>Used with</th><th>Rough guide</th><th>Ours</th></tr></thead>
+    <tbody>
+      <tr><td>Pearson r / Spearman ρ</td><td>Correlation</td><td>0.1 small, 0.3 medium, 0.5 large</td><td class="num">0.20–0.58 (H1)</td></tr>
+      <tr><td>Cramér's V</td><td>Chi-square</td><td>Depends on df; for df* = 5: 0.04 small, 0.13 medium, 0.22 large</td><td class="num">0.10–0.26 (H2), 0.18 (H4)</td></tr>
+      <tr><td>η² (eta squared)</td><td>ANOVA</td><td>0.01 small, 0.06 medium, 0.14 large</td><td class="num">0.016 (H3)</td></tr>
+      <tr><td>ε² (epsilon squared)</td><td>Kruskal-Wallis</td><td>Same scale as η²</td><td class="num">0.019 (H3)</td></tr>
+      <tr><td>Cohen's d</td><td>t-test</td><td>0.2 small, 0.5 medium, 0.8 large</td><td class="num">1.91 (H5)</td></tr>
+      <tr><td>Rank-biserial r</td><td>Mann-Whitney</td><td>−1 to 1; 0.1 small, 0.3 medium, 0.5 large</td><td class="num">0.81 (H5)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Multiple comparisons</h3>
+  <p>If you run 20 tests at α = 0.05, you expect about 1 false positive by chance. Corrections control this:</p>
+  <ul>
+    <li><strong>Bonferroni</strong>: multiply each p by the number of tests m (or test at α/m). Simple but conservative. Used for H3's 28 pairwise tests and H4's 42 residual cells.</li>
+    <li><strong>Holm</strong>: sort p-values ascending; multiply the smallest by m, the next by m−1, and so on (keeping the sequence non-decreasing). Same protection, more power. Used in H1 (10 tests per method) and H2 (8 diseases).</li>
+  </ul>
+  <h3>Autocorrelation</h3>
+  <p>Consecutive months are similar (this July looks like last June's trend). Tests assume independent observations,
+    so autocorrelation makes p-values <em>too small</em>. It affects H1 and H5; we state it as a limitation and rely on
+    effect sizes, which are large enough that the conclusions hold.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="tests">
+  <h2>5. The 7 tests</h2>
+  <p class="muted">For each: what it asks, assumptions, the formula, and where we used it.</p>
+
+  <div class="test-card">
+    <h3>t-test (Welch's)</h3>
+    <p><span class="pill">parametric</span><span class="pill">2 groups</span><span class="pill">compares means</span></p>
+    <p><strong>Asks:</strong> do two groups have different means?</p>
+    <p><strong>Assumes:</strong> independent observations, roughly normal data (or large samples, by the central limit theorem).
+      <em>Student's</em> t-test also assumes equal variances; <strong>Welch's</strong> doesn't, which is why we used it (Levene p ≈ 0.006 in H5).</p>
+    <span class="formula">t = (x̄₁ − x̄₂) / √(s₁²/n₁ + s₂²/n₂)       df by Welch–Satterthwaite</span>
+    <p><strong>Effect size:</strong> Cohen's d = (x̄₁ − x̄₂) / pooled SD.</p>
+    <p><strong>Used in H5:</strong> monsoon vs non-monsoon monthly outbreak counts. t = 9.56, p ≈ 10⁻¹⁴, d = 1.91.</p>
+  </div>
+
+  <div class="test-card">
+    <h3>Mann-Whitney U</h3>
+    <p><span class="pill">non-parametric</span><span class="pill">2 groups</span><span class="pill">compares ranks</span></p>
+    <p><strong>Asks:</strong> does one group tend to have larger values than the other? (Often described as comparing medians.)</p>
+    <p><strong>Assumes:</strong> independent observations, ordinal or continuous data. No normality needed.</p>
+    <p><strong>How:</strong> rank all values together; if one group's ranks are systematically higher, U is extreme.</p>
+    <span class="formula">U₁ = R₁ − n₁(n₁ + 1)/2        (R₁ = sum of group 1's ranks)
+rank-biserial r = 2U₁/(n₁n₂) − 1</span>
+    <p><strong>Interpretation of r = 0.81:</strong> a random monsoon month beats a random non-monsoon month about (1 + 0.81)/2 ≈ 90% of the time.</p>
+    <p><strong>Used in:</strong> H5 (main test, U = 4002, p ≈ 10⁻¹⁵) and H3's post-hoc pairwise comparisons.</p>
+  </div>
+
+  <div class="test-card">
+    <h3>One-way ANOVA</h3>
+    <p><span class="pill">parametric</span><span class="pill">3+ groups</span><span class="pill">compares means</span></p>
+    <p><strong>Asks:</strong> are all group means equal, or does at least one differ?</p>
+    <p><strong>Assumes:</strong> independence, normality within groups, <strong>equal variances</strong> (homoscedasticity).</p>
+    <span class="formula">F = MS_between / MS_within = [SS_between/(k−1)] / [SS_within/(N−k)]
+η² = SS_between / SS_total</span>
+    <p><strong>Why not many t-tests?</strong> 8 groups = 28 t-tests, inflating Type I error. ANOVA tests everything at once; post-hoc tests then find which pairs differ.</p>
+    <p><strong>Used in H3:</strong> F(7, 8038) = 18.9, p ≈ 10⁻²⁵, η² = 0.016. But assumptions failed (7/8 groups non-normal; Levene p ≈ 4×10⁻¹⁴), so we trusted Kruskal-Wallis.</p>
+  </div>
+
+  <div class="test-card">
+    <h3>Kruskal-Wallis H</h3>
+    <p><span class="pill">non-parametric</span><span class="pill">3+ groups</span><span class="pill">compares ranks</span></p>
+    <p><strong>Asks:</strong> do the groups come from the same distribution? (Non-parametric ANOVA; extends Mann-Whitney to 3+ groups.)</p>
+    <p><strong>Assumes:</strong> independence; similar distribution shapes if you want to talk about medians.</p>
+    <span class="formula">H = [12 / (N(N+1))] · Σ (Rᵢ² / nᵢ) − 3(N+1)       ~ χ² with k−1 df
+ε² = (H − k + 1) / (N − k)</span>
+    <p><strong>Used in H3:</strong> H(7) = 162, p ≈ 10⁻³¹, ε² = 0.019. Followed by 28 pairwise Mann-Whitney tests (Bonferroni) as the post-hoc.</p>
+  </div>
+
+  <div class="test-card">
+    <h3>Chi-square (χ²)</h3>
+    <p><span class="pill">non-parametric</span><span class="pill">counts / categories</span></p>
+    <p><strong>Two versions:</strong></p>
+    <ul>
+      <li><strong>Goodness-of-fit:</strong> does one categorical variable follow an expected distribution? (H2: are outbreaks spread evenly over 12 months?) df = k − 1.</li>
+      <li><strong>Test of independence:</strong> are two categorical variables related? (H4: disease × region.) df = (r − 1)(c − 1); expected E = row total × column total / N.</li>
+    </ul>
+    <span class="formula">χ² = Σ (Observed − Expected)² / Expected
+Cramér's V = √( χ² / (N · (min(r, c) − 1)) )</span>
+    <p><strong>Assumes:</strong> independent observations, counts (not percentages), <strong>expected count ≥ 5</strong> in (almost) every cell, otherwise the χ² approximation breaks. Ours: min expected 7.2 (H2), 6.6 (H4).</p>
+    <p><strong>Adjusted standardized residuals</strong> (H4) show <em>which cells</em> drive a significant result: |z| above the critical value means significantly more (+) or fewer (−) than expected.</p>
+  </div>
+
+  <div class="test-card">
+    <h3>Pearson correlation (r)</h3>
+    <p><span class="pill">parametric</span><span class="pill">2 numeric variables</span><span class="pill">linear</span></p>
+    <p><strong>Asks:</strong> is there a <em>linear</em> relationship? r ranges from −1 to +1.</p>
+    <p><strong>Assumes:</strong> linearity, roughly normal variables, no big outliers (sensitive to them).</p>
+    <span class="formula">r = cov(X, Y) / (s_X · s_Y)        test: t = r√(n−2) / √(1−r²), df = n−2</span>
+    <p><strong>Used in H1</strong>: rainfall at month t − lag vs. outbreak count at month t.</p>
+  </div>
+
+  <div class="test-card">
+    <h3>Spearman correlation (ρ)</h3>
+    <p><span class="pill">non-parametric</span><span class="pill">2 variables</span><span class="pill">monotonic</span></p>
+    <p><strong>Asks:</strong> as X goes up, does Y consistently go up (or down)? Not necessarily in a straight line.</p>
+    <p><strong>How:</strong> Pearson correlation computed on the <em>ranks</em>. Robust to outliers and skew.</p>
+    <p><strong>Used in H1</strong> alongside Pearson. Where Spearman &gt; Pearson (Malaria, Cholera at lag 1), the relationship is monotonic but not linear, or a few extreme months pull Pearson down. Both agreed on the strongest lag for every disease.</p>
+  </div>
+
+  <h3>Which test when: decision guide</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Question type</th><th>Normal data</th><th>Skewed / ranks</th></tr></thead>
+    <tbody>
+      <tr><td>2 groups, numeric outcome</td><td>t-test (Welch)</td><td>Mann-Whitney U</td></tr>
+      <tr><td>3+ groups, numeric outcome</td><td>ANOVA</td><td>Kruskal-Wallis</td></tr>
+      <tr><td>2 numeric variables</td><td>Pearson</td><td>Spearman</td></tr>
+      <tr><td>Categories / counts</td><td colspan="2">Chi-square (goodness-of-fit or independence)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="hyp">
+  <h2>6. Our 5 hypotheses</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>H₀</th><th>Test</th><th>Result</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>H1</td><td>No correlation between rainfall at month t−lag and outbreak count at month t</td><td>Pearson + Spearman, lag 0 &amp; 1, Holm</td><td>Rejected for all 5 diseases (20 tests)</td><td class="num">r 0.20–0.58</td></tr>
+      <tr><td>H2</td><td>Each disease's outbreaks are evenly spread across 12 months</td><td>χ² goodness-of-fit, Holm</td><td>Rejected for all 8 diseases</td><td class="num">V 0.10–0.26</td></tr>
+      <tr><td>H3</td><td>Temperature at outbreak time is the same for every disease</td><td>ANOVA + Kruskal-Wallis, Mann-Whitney post-hoc</td><td>Rejected, but tiny effect</td><td class="num">ε² 0.019</td></tr>
+      <tr><td>H4</td><td>Disease type is independent of region</td><td>χ² independence</td><td>Rejected</td><td class="num">V 0.18</td></tr>
+      <tr><td>H5</td><td>Monsoon months don't have more outbreaks</td><td>Welch t + Mann-Whitney (one-sided)</td><td>Rejected</td><td class="num">d 1.91, r 0.81</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>H1 · Rainfall lag differs by transmission route</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Disease</th><th>Route</th><th>Pearson r (lag 0 / 1)</th><th>Spearman ρ (lag 0 / 1)</th><th>Strongest</th></tr></thead>
+    <tbody>
+      <tr><td>Acute Diarrhoeal Disease</td><td>Waterborne</td><td class="num"><strong>0.58</strong> / 0.36</td><td class="num"><strong>0.55</strong> / 0.41</td><td>lag 0</td></tr>
+      <tr><td>Cholera</td><td>Waterborne</td><td class="num"><strong>0.51</strong> / 0.33</td><td class="num"><strong>0.54</strong> / 0.46</td><td>lag 0</td></tr>
+      <tr><td>Dengue</td><td><em>Aedes</em> mosquito</td><td class="num">0.44 / <strong>0.52</strong></td><td class="num">0.46 / <strong>0.50</strong></td><td>lag 1</td></tr>
+      <tr><td>Chikungunya</td><td><em>Aedes</em> mosquito</td><td class="num">0.20 / <strong>0.30</strong></td><td class="num">0.24 / <strong>0.30</strong></td><td>lag 1</td></tr>
+      <tr><td>Malaria</td><td><em>Anopheles</em> mosquito</td><td class="num"><strong>0.36</strong> / 0.34</td><td class="num"><strong>0.47</strong> / 0.45</td><td>tie</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Why:</strong> contaminated water and flooding cause waterborne illness immediately (lag 0). Mosquitoes must
+    breed in standing water first, which takes weeks (lag 1). <strong>Limitation:</strong> we tested that each correlation
+    is non-zero, not formally that lag 1 &gt; lag 0; and monthly series are autocorrelated and share the monsoon cycle.</p>
+
+  <h3>H2 · Outbreaks are seasonal</h3>
+  <p>χ² goodness-of-fit per disease, with expected counts weighted by how often each calendar month appears in the data
+    (May and June appear 14 times, other months 13, because the range is May 2009 – June 2022). Every disease's peak
+    is in June–September; peak months hold 13–27% of outbreaks vs. ~8% if even.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Disease</th><th>n</th><th>χ² (df 11)</th><th>Cramér's V</th><th>Peak</th></tr></thead>
+    <tbody>
+      <tr><td>ADD</td><td class="num">5126</td><td class="num">1432</td><td class="num">0.16</td><td>Jul (17%)</td></tr>
+      <tr><td>Dengue</td><td class="num">1618</td><td class="num">511</td><td class="num">0.17</td><td>Sep (16%)</td></tr>
+      <tr><td>Chikungunya</td><td class="num">731</td><td class="num">73</td><td class="num">0.10 (weakest)</td><td>Aug (13%)</td></tr>
+      <tr><td>Cholera</td><td class="num">666</td><td class="num">329</td><td class="num">0.21</td><td>Jul (21%)</td></tr>
+      <tr><td>Malaria</td><td class="num">544</td><td class="num">182</td><td class="num">0.17</td><td>Jul (16%)</td></tr>
+      <tr><td>AES</td><td class="num">111</td><td class="num">80</td><td class="num">0.26</td><td>Jun (27%)</td></tr>
+      <tr><td>Acute Gastroenteritis</td><td class="num">100</td><td class="num">49</td><td class="num">0.21</td><td>Jun (20%)</td></tr>
+      <tr><td>Other</td><td class="num">88</td><td class="num">45</td><td class="num">0.22</td><td>Sep (19%)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Chikungunya is weakest because most of its outbreaks came in one 2011–12 epidemic wave rather than a repeating cycle.</p>
+
+  <h3>H3 · Temperature by disease</h3>
+  <ul>
+    <li>Only the 8,046 rows with <strong>measured</strong> temperature (imputation R² was only 0.17).</li>
+    <li>Assumptions: Shapiro-Wilk rejected normality for 7/8 diseases; Levene rejected equal variances (p ≈ 4×10⁻¹⁴) → <strong>Kruskal-Wallis is the test to trust</strong>.</li>
+    <li>ANOVA F(7, 8038) = 18.9, p ≈ 10⁻²⁵, η² = 0.016 · Kruskal-Wallis H(7) = 162, p ≈ 10⁻³¹, ε² = 0.019. Both reject.</li>
+    <li><strong>Significant but tiny</strong>: disease explains ~2% of temperature variation. Most medians lie within ~2°C (29.0–31.0°C).</li>
+    <li>Post-hoc: 13 of 28 pairs differ. Chikungunya warmest (median 33.1°C), AES coolest (27.8°C), r = 0.50 between them.</li>
+    <li><strong>Confound:</strong> Chikungunya is in the hot south, AES in the northeast, and temperature depends on location. So this is probably <em>where</em> diseases occur, not a temperature preference.</li>
+  </ul>
+
+  <h3>H4 · Disease depends on region</h3>
+  <p>States grouped into 6 regions following India's Zonal Councils (North, Central, East, West, South, Northeast).
+    "Other" excluded (a mixed label). χ²(30) = 1440, p ≈ 10⁻²⁸⁴, <strong>Cramér's V = 0.18</strong> (medium-to-large for this table size).</p>
+  <ul>
+    <li>Chikungunya → South (z = +18.6; 60% of its outbreaks). Strongest cell.</li>
+    <li>AES → Northeast (z = +16.8; 46%), and zero outbreaks in the South.</li>
+    <li>Dengue → South &amp; West · Malaria → Central &amp; Northeast, under-represented in the South · Cholera → North (Punjab/J&amp;K).</li>
+    <li>The test compares each region's <em>mix</em> of diseases, so differences in total reporting volume between regions are largely factored out.</li>
+  </ul>
+
+  <h3>H5 · More outbreaks in monsoon months</h3>
+  <ul>
+    <li>Unit: one year-month's total outbreak count. Monsoon = Jun–Sep. One-sided (direction set in advance). 2020 and 2022 excluded (anomalies), with a sensitivity run including them.</li>
+    <li>Median 95 vs. 35 outbreaks per month (mean 98.7 vs. 42.5): about <strong>2.3×</strong>.</li>
+    <li>Welch t = 9.56, d = 1.91 · Mann-Whitney U = 4002, rank-biserial r = 0.81. Both p &lt; 10⁻¹³. The largest effect in the project.</li>
+    <li>Non-monsoon counts are skewed (Shapiro p ≈ 4×10⁻⁷) and variances unequal, so <strong>Mann-Whitney is more trustworthy</strong>; the t-test agrees because samples are large (48/92) and the gap is huge.</li>
+    <li>Including 2020/2022 weakens it a little (d 1.59) because their unusually low monsoon months pull the monsoon mean down.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="ml">
+  <h2>7. Modeling theory</h2>
+
+  <h3>The prediction task</h3>
+  <p><strong>Binary classification:</strong> for each district and month, predict 1 (an outbreak was reported) or 0 (none).
+    Forecasting national totals wasn't viable: only 158 monthly points, data ends mid-2022, and the last years are distorted.</p>
+  <div class="box warn"><p><strong>Constructed negatives:</strong> the data only has outbreaks, so we built a full
+    district × month grid (764 × 158 = 120,712 cells) and marked cells with no record as 0. <strong>Assumption:</strong>
+    no record = no outbreak. It might really mean "not reported", which is a key limitation.</p></div>
+
+  <h3>Logistic regression</h3>
+  <p>A linear model for probabilities. It computes a weighted sum of features and squashes it into 0–1 with the sigmoid:</p>
+  <span class="formula">p(outbreak) = 1 / (1 + e^−(β₀ + β₁x₁ + … + βₖxₖ))      log(p / (1−p)) = β₀ + Σ βᵢxᵢ</span>
+  <p>Each coefficient changes the <em>log-odds</em>. Simple, fast, interpretable, but only captures linear (additive)
+    effects. <code>C</code> is the inverse regularization strength (smaller C = stronger penalty on large weights); we
+    tuned C ∈ {0.01, 0.1, 1, 10}. Numeric features were standardized; month and region one-hot encoded.</p>
+
+  <h3>Gradient boosting</h3>
+  <p>An <strong>ensemble of small decision trees built one after another</strong>. Each new tree is fitted to correct the
+    errors (gradients of the loss) of all previous trees; predictions are the sum of all trees, scaled by the
+    <strong>learning rate</strong>. It captures non-linear effects and interactions automatically.</p>
+  <p>We used scikit-learn's <code>HistGradientBoostingClassifier</code>, which bins features into histograms (fast on
+    large data) and handles missing values natively. Tuned: learning rate {0.05, 0.1}, max leaf nodes {15, 31}, min
+    samples per leaf {50, 200}, L2 regularization {0, 1} (16 combinations). Early stopping prevents adding trees once
+    it stops improving.</p>
+  <div class="box tip"><p><strong>Bagging vs boosting:</strong> Random Forest (bagging) builds trees <em>independently</em>
+    on random samples and averages them, which reduces variance. Boosting builds trees <em>sequentially</em>, each fixing
+    the last, which reduces bias.</p></div>
+
+  <h3>Train / validate / test split, and why by time</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Split</th><th>Period</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Train</td><td>May 2009 – Dec 2017</td><td>Fit the model</td></tr>
+      <tr><td>Validate</td><td>2018</td><td>Choose hyperparameters and the yes/no threshold</td></tr>
+      <tr><td>Test</td><td>2019</td><td>Final score, used once, after refitting on 2009–2018</td></tr>
+      <tr><td>Stress test</td><td>2020 – Jun 2022</td><td>Behaviour under the COVID-era reporting shift</td></tr>
+    </tbody>
+  </table></div>
+  <p>A <strong>random split</strong> would put 2019 rows in training and 2018 rows in testing, letting the model learn
+    from the future (<strong>data leakage</strong>) and giving over-optimistic scores. Real use means predicting forward in
+    time, so the test must be later than the training data.</p>
+  <p><strong>Other leakage we avoided:</strong> all history features use only months <em>before</em> t (shift by 1);
+    missing climate is filled from training-period averages only; the set of districts is chosen from the training
+    period only.</p>
+
+  <h3>Features</h3>
+  <ul>
+    <li><strong>Season &amp; place:</strong> month, region, latitude, longitude.</li>
+    <li><strong>Climate:</strong> region's mean rainfall and temperature this month and last month (lag 0 and 1).</li>
+    <li><strong>District history (past-only):</strong> outbreak last month, same month last year, count in the previous 12 months, long-run outbreak rate so far.</li>
+  </ul>
+  <p><strong>Why region-level climate?</strong> Climate values exist only on outbreak rows, so a district with no outbreak
+    that month has no climate value. District averages were too sparse (median district: 5 outbreak months in 13 years).</p>
+
+  <h3>Evaluation metrics</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Metric</th><th>Meaning</th><th>Why / why not</th></tr></thead>
+    <tbody>
+      <tr><td>Accuracy</td><td>Share of all predictions that are correct</td><td><strong>Useless here</strong>: ~95% of cells are 0, so always predicting "no outbreak" scores ~95%.</td></tr>
+      <tr><td>Precision</td><td>TP / (TP + FP): of the alerts raised, how many were real</td><td>Cost of false alarms</td></tr>
+      <tr><td>Recall (sensitivity)</td><td>TP / (TP + FN): of the real outbreaks, how many we caught</td><td>Cost of missed outbreaks</td></tr>
+      <tr><td>F1</td><td>Harmonic mean of precision and recall</td><td>Used to pick the threshold on validation data</td></tr>
+      <tr><td><strong>PR-AUC</strong> (average precision)</td><td>Area under the precision-recall curve across all thresholds</td><td><strong>Primary metric.</strong> Focuses on the rare positive class. A random model scores the positive rate (e.g. 0.043).</td></tr>
+      <tr><td>ROC-AUC</td><td>Probability a random positive is ranked above a random negative</td><td>Random = 0.5. Can look flattering with heavy imbalance, because the many easy negatives inflate it.</td></tr>
+      <tr><td>Brier score</td><td>Mean squared error of the predicted probabilities</td><td>Checks calibration (lower is better)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Confusion matrix (example: <em>Aedes</em> model, 2019)</h3>
+  <div class="table-wrap"><table style="min-width:420px">
+    <thead><tr><th></th><th>Predicted outbreak</th><th>Predicted none</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Actual outbreak</strong> (162)</td><td class="num">TP = 36</td><td class="num">FN = 126</td></tr>
+      <tr><td><strong>Actual none</strong> (3,618)</td><td class="num">FP = 106</td><td class="num">TN = 3,512</td></tr>
+    </tbody>
+  </table></div>
+  <p>Precision = 36/142 ≈ 0.25 · Recall = 36/162 ≈ 0.22. This is at the F1-optimal threshold. <strong>Lowering the
+    threshold</strong> catches more outbreaks at the cost of more false alarms (≈50% recall at ~12% precision; ≈80%
+    recall at ~8%). For public health, missing an outbreak usually costs more than a false alarm, so a lower threshold is
+    reasonable. Random alerts would be right only ~4% of the time.</p>
+
+  <h3>Baseline / ablation and permutation importance</h3>
+  <p><strong>Ablation:</strong> train the same model with and without the climate features. The difference is what
+    climate <em>adds</em>. Without this comparison, "the model works" says nothing about climate.</p>
+  <p><strong>Permutation importance:</strong> shuffle one feature in the test set and measure how much PR-AUC drops.
+    A big drop = the model relies on it. Near zero or slightly negative = not useful (negative values are noise).
+    Caveat: correlated features share credit; if rain and month carry the same information, shuffling one barely hurts
+    because the other stands in.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="models">
+  <h2>8. Our models &amp; results</h2>
+  <h3>Transmission-route models (main result)</h3>
+  <p>Gradient boosting, one per route, each compared with a no-climate version. AES excluded (a syndrome with mixed causes).</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Model</th><th>Diseases</th><th>Districts</th><th>2019 positives</th><th>Random</th><th>No climate</th><th>With climate</th><th>ROC-AUC</th></tr></thead>
+    <tbody>
+      <tr><td>Waterborne</td><td>ADD, Cholera, AGE</td><td class="num">611</td><td class="num">290</td><td class="num">0.040</td><td class="num">0.133</td><td class="num">0.130</td><td class="num">0.744</td></tr>
+      <tr><td><em>Aedes</em></td><td>Dengue, Chikungunya</td><td class="num">315</td><td class="num">162</td><td class="num">0.043</td><td class="num">0.187</td><td class="num">0.185</td><td class="num">0.813</td></tr>
+      <tr><td><em>Anopheles</em></td><td>Malaria</td><td class="num">184</td><td class="num">18</td><td class="num">0.008</td><td class="num">0.058</td><td class="num">0.093</td><td class="num">0.865</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Random / No climate / With climate columns are PR-AUC on the 2019 test year.</p>
+  <ul>
+    <li>All beat random: waterborne ~3.3×, <em>Aedes</em> ~4.3×, <em>Anopheles</em> ~11×.</li>
+    <li><strong>Climate adds no measurable score</strong> for waterborne or <em>Aedes</em> (differences within noise).</li>
+    <li><strong>But each model uses the rainfall lag its biology predicts</strong>: waterborne relies on same-month rain, <em>Aedes</em>' top feature is last month's rain. This reproduces H1 with a completely different method.</li>
+    <li><strong>Why no score gain:</strong> the month feature drops to ~zero importance once rainfall is present. The model uses rainfall <em>instead of</em> month, as a seasonal clock, not <em>on top of</em> it.</li>
+    <li><em>Anopheles</em>: only 10 validation and 18 test positives (Malaria reporting thinned after 2016). Too few to judge; treat as suggestive.</li>
+  </ul>
+
+  <h3>Any-disease model (reference)</h3>
+  <p>685 districts; logistic regression vs. gradient boosting, each with/without climate. All four reach PR-AUC ≈ 0.19–0.20
+    vs. 0.061 random (~3.2×); ROC-AUC 0.76–0.78. District history is the strongest signal. It's mostly an ADD model
+    (ADD = 57% of records), which motivated splitting by transmission route.</p>
+  <h3>Stress test 2020–22</h3>
+  <p>PR-AUC drops (e.g. any-disease ≈ 0.12), but so does the base rate (2.6%), so the lift over random stays ~4.7× and
+    ROC-AUC holds. The <em>ranking</em> of districts survives the COVID-era shift; the absolute probabilities are too high
+    because the model was trained when outbreaks were more common.</p>
+  <h3>A Dengue-only model was tried and dropped</h3>
+  <p>The <em>Aedes</em> model matched it (0.185 vs. 0.169) with twice the positives, so it was redundant.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="limits">
+  <h2>9. Limitations (know these cold)</h2>
+  <ol>
+    <li><strong>Reported, not actual, outbreaks.</strong> Surveillance capacity varies by state and year; a missing record may mean "not reported".</li>
+    <li><strong>No population normalization.</strong> Bigger districts naturally report more.</li>
+    <li><strong>Coarse climate.</strong> Models use regional monthly averages; region-month climate is averaged over outbreak locations, so it's biased toward them.</li>
+    <li><strong>Autocorrelation / shared seasonality.</strong> p-values for time-series tests (H1, H5) are optimistic.</li>
+    <li><strong>Correlation ≠ causation.</strong> Rain and outbreaks move together; we didn't prove rain causes outbreaks.</li>
+    <li><strong>Imputation is rough</strong> (R² 0.17–0.20), so we excluded imputed values where it mattered.</li>
+    <li><strong>Deaths unusable</strong> (71.6% missing).</li>
+    <li><strong>Small samples</strong> for some groups (AES 111, <em>Anopheles</em> 18 test positives).</li>
+    <li><strong>Districts created mid-period</strong> get zero-filled months before they existed.</li>
+  </ol>
+  <h3>Future work</h3>
+  <p>District-level rainfall (IMD gridded data or CHIRPS) · neighbouring-district outbreak features (spatial spread) ·
+    population per district · bootstrap confidence intervals on model metrics · weekly resolution with lag features.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="qa">
+  <h2>10. Viva questions</h2>
+  <p class="muted">Try answering out loud before opening each one. Use "Quiz mode" to close all answers.</p>
+  <div class="qa-tools">
+    <input type="search" id="qsearch" placeholder="Search questions…" aria-label="Search questions">
+    <button type="button" id="openAll">Show all answers</button>
+    <button type="button" id="closeAll">Quiz mode (hide all)</button>
+  </div>
+  <div class="qbank">
+
+  <div class="qgroup"><h3>About the project &amp; data</h3>
+    <details class="qa"><summary>What is the objective of your project?</summary><div class="a">
+      <p>To understand how climate (rainfall, temperature, vegetation) relates to disease outbreaks in India, test specific
+        hypotheses about that relationship, and check whether climate can help predict when and where outbreaks happen.</p></div></details>
+    <details class="qa"><summary>What dataset did you use, and what does one row represent?</summary><div class="a">
+      <p>EpiClim (Zenodo), built from IDSP surveillance data. Each row is one reported outbreak: district, week, disease,
+        cases, deaths, and that district's rainfall, temperature and LAI. About 9,000 rows, May 2009 – June 2022.</p></div></details>
+    <details class="qa"><summary>What is LAI?</summary><div class="a">
+      <p>Leaf Area Index: leaf area per unit ground area, a satellite-derived measure of vegetation greenness. It was
+        included as a proxy for mosquito habitat, but showed only weak relationships with outbreaks.</p></div></details>
+    <details class="qa"><summary>How did you handle missing values?</summary><div class="a">
+      <ul><li>Temp (10.4% missing): linear regression on latitude + longitude (R² 0.17).</li>
+        <li>LAI (24.4%): regression on latitude + longitude + Temp (R² 0.20), clipped at 0.</li>
+        <li>preci (1.5%): median, because rainfall is skewed.</li>
+        <li>Deaths (71.6%): filled with 0 but not analysed.</li></ul>
+      <p>We added <code>*_imputed</code> flags so imputed values could be excluded later, which we did in H3.</p></div></details>
+    <details class="qa"><summary>Why regression imputation instead of mean imputation?</summary><div class="a">
+      <p>Temperature varies strongly with location (correlation with longitude −0.37, latitude −0.30). A flat mean would
+        give Kerala and Kashmir the same temperature. Regression uses location, so it's more realistic, although R² is
+        modest, which is why we flagged and excluded imputed values in sensitive analyses.</p></div></details>
+    <details class="qa"><summary>Why did you count outbreaks instead of cases?</summary><div class="a">
+      <p>Case totals are dominated by a few extreme records; one 2009 Cholera record had 51,225 cases, more than 5× the
+        next. Case charts looked spiky and random. Counting outbreak records reveals a clean seasonal pattern aligned with
+        rainfall, and isn't distorted by one huge event. It changed conclusions, e.g. the West Bengal Cholera hotspot was
+        really just the outlier.</p></div></details>
+    <details class="qa"><summary>Why didn't you remove the 2009 Cholera outlier?</summary><div class="a">
+      <p>It's in the raw source, and we can't tell whether it's a real large outbreak or an entry error. Deleting it
+        would be an unjustified edit. Instead we used methods robust to it: outbreak counts and rank-based tests.</p></div></details>
+    <details class="qa"><summary>What's unusual about 2020 and 2022?</summary><div class="a">
+      <p>2020 has only 151 records (vs. 570–1,110 before), most likely COVID disrupting surveillance. 2022 is a partial
+        year: the data ends in June. We excluded both from H5 and used them as a stress test for the models.</p></div></details>
+    <details class="qa"><summary>Why group diseases into 8 categories?</summary><div class="a">
+      <p>The raw data had 22 labels, many near-duplicates ("Dengue", "Suspected Dengue", "Dengue/Chikungunya"). We kept
+        the 7 well-populated ones and grouped the rare remainder as "Other" so each category has enough data.</p></div></details>
+  </div>
+
+  <div class="qgroup"><h3>EDA</h3>
+    <details class="qa"><summary>What was your most important EDA finding?</summary><div class="a">
+      <p>Two: outbreak counts reveal clear monsoon seasonality that case totals hide; and the rainfall-lag pattern
+        (waterborne at lag 0, <em>Aedes</em>-borne at lag 1), which we then confirmed in H1 and in the models.</p></div></details>
+    <details class="qa"><summary>Your disease-to-disease correlations were high. Do diseases occur together?</summary><div class="a">
+      <p>Not necessarily. It's a <strong>confound</strong>: all diseases peak in the monsoon, so their monthly counts
+        rise together even if they're unrelated. To test real co-occurrence you'd need to remove seasonality first and
+        correlate the residuals.</p></div></details>
+    <details class="qa"><summary>Why did you use small multiples instead of one chart?</summary><div class="a">
+      <p>On a shared axis, one disease's spike (e.g. Dengue 2015) flattens all the others. Giving each disease its own
+        panel and scale makes every pattern visible.</p></div></details>
+    <details class="qa"><summary>Why does West Bengal have so many cases?</summary><div class="a">
+      <p>Partly the 2009 Cholera outlier, partly population and reporting capacity. Raw totals aren't normalized by
+        population, so states can't be fairly compared on burden from this data alone.</p></div></details>
+  </div>
+
+  <div class="qgroup"><h3>Statistics</h3>
+    <details class="qa"><summary>What is a p-value? What is it not?</summary><div class="a">
+      <p>The probability of getting results at least as extreme as ours, assuming H₀ is true. It is <em>not</em> the
+        probability H₀ is true, and it doesn't measure how big or important the effect is.</p></div></details>
+    <details class="qa"><summary>Your p-values are tiny (like 10⁻³¹). Does that mean the effect is huge?</summary><div class="a">
+      <p>No. With ~9,000 rows even trivial differences become significant. That's why we report effect sizes: H3 has
+        p ≈ 10⁻³¹ but ε² = 0.019, meaning disease explains only ~2% of temperature variation. Significant, but not
+        practically important.</p></div></details>
+    <details class="qa"><summary>Difference between Type I and Type II errors?</summary><div class="a">
+      <p>Type I: rejecting a true H₀ (false positive), probability α = 0.05. Type II: failing to reject a false H₀
+        (false negative), probability β. Lowering α reduces Type I errors but increases Type II errors.</p></div></details>
+    <details class="qa"><summary>When do you use parametric vs non-parametric tests?</summary><div class="a">
+      <p>Parametric (t-test, ANOVA, Pearson) when data is roughly normal without big outliers; more powerful when that
+        holds. Non-parametric (Mann-Whitney, Kruskal-Wallis, Spearman) for skewed data, outliers or ranks. Our case
+        counts and monthly counts are skewed, so we leaned on non-parametric tests and ran parametric ones alongside for
+        comparison.</p></div></details>
+    <details class="qa"><summary>In H3, why trust Kruskal-Wallis over ANOVA?</summary><div class="a">
+      <p>ANOVA assumes normality and equal variances. Shapiro-Wilk rejected normality for 7 of 8 diseases and Levene
+        rejected equal variances (p ≈ 4×10⁻¹⁴). Kruskal-Wallis needs neither. Both rejected H₀, so the conclusion is
+        robust either way.</p></div></details>
+    <details class="qa"><summary>Why Welch's t-test and not Student's?</summary><div class="a">
+      <p>Student's t-test assumes equal variances. Levene's test showed unequal variances (p ≈ 0.006); monsoon months
+        have SD 37 vs. 25. Welch's version doesn't assume equal variances.</p></div></details>
+    <details class="qa"><summary>Why was H5 one-sided?</summary><div class="a">
+      <p>Our hypothesis had a direction set in advance from domain knowledge: monsoon months have <em>more</em>
+        outbreaks. A one-sided test is appropriate when the direction is stated before seeing the data.</p></div></details>
+    <details class="qa"><summary>Why run both a t-test and Mann-Whitney in H5?</summary><div class="a">
+      <p>To compare parametric and non-parametric approaches. Non-monsoon counts are skewed, so Mann-Whitney is more
+        trustworthy; the t-test still agrees because the samples are large (central limit theorem) and the gap is very big.</p></div></details>
+    <details class="qa"><summary>Pearson vs Spearman: what's the difference and why use both?</summary><div class="a">
+      <p>Pearson measures <em>linear</em> association and is sensitive to outliers. Spearman is Pearson on ranks and
+        measures any <em>monotonic</em> association, so it's robust. Using both checks the result isn't driven by a few
+        extreme months; they agreed on the strongest lag for every disease.</p></div></details>
+    <details class="qa"><summary>Why did you need a multiple-comparison correction?</summary><div class="a">
+      <p>Running many tests inflates false positives: 20 tests at α = 0.05 give ~1 false positive expected by chance.
+        We used Holm (H1, H2) and Bonferroni (H3 post-hoc, H4 residuals).</p></div></details>
+    <details class="qa"><summary>Holm vs Bonferroni?</summary><div class="a">
+      <p>Both control the family-wise error rate. Bonferroni multiplies every p by m. Holm sorts p-values and multiplies
+        the smallest by m, the next by m−1, etc., so it's uniformly more powerful while giving the same protection.</p></div></details>
+    <details class="qa"><summary>What does Cramér's V = 0.18 mean in H4?</summary><div class="a">
+      <p>It measures the strength of association between disease and region on a 0–1 scale. For a 7 × 6 table (5 degrees
+        of freedom for the effect), 0.18 is medium-to-large: region genuinely shapes the disease mix.</p></div></details>
+    <details class="qa"><summary>What are the assumptions of the chi-square test?</summary><div class="a">
+      <p>Independent observations, raw counts (not percentages), and expected count ≥ 5 in (almost) all cells. Our minimum
+        expected counts were 7.2 (H2) and 6.6 (H4). We excluded "Other" from H4 because it's a mixed label.</p></div></details>
+    <details class="qa"><summary>In H2, why weren't the expected counts simply n/12?</summary><div class="a">
+      <p>The data runs May 2009 to June 2022, so May and June appear 14 times and other months 13. Even with no
+        seasonality, those two months would get more records. We weighted the expected counts by how often each month
+        appears.</p></div></details>
+    <details class="qa"><summary>Why exclude imputed temperatures in H3?</summary><div class="a">
+      <p>Imputed temperatures came from a location-only regression with R² 0.17, essentially "the typical temperature for
+        that place". Including them would bias the comparison toward location, so we used the 8,046 measured values only.</p></div></details>
+    <details class="qa"><summary>Does H3 prove some diseases prefer warmer temperatures?</summary><div class="a">
+      <p>No. The differences are driven by Chikungunya (hot south) and AES (northeast). Temperature depends on location,
+        so this likely reflects <em>where</em> diseases occur. Testing a true temperature effect would need comparisons
+        within the same region.</p></div></details>
+    <details class="qa"><summary>Does rainfall cause Dengue?</summary><div class="a">
+      <p>Our analysis shows association, not causation. The lag-1 pattern is consistent with the known mechanism
+        (rain → standing water → mosquito breeding → transmission), but correlation alone can't prove it. Rain and Dengue
+        could also share other seasonal drivers like humidity or temperature.</p></div></details>
+    <details class="qa"><summary>Why is autocorrelation a problem?</summary><div class="a">
+      <p>Tests assume independent observations, but consecutive months are related. That makes the effective sample size
+        smaller than it looks, so p-values come out too small. We noted it as a limitation; the effect sizes are large
+        enough that the conclusions hold.</p></div></details>
+    <details class="qa"><summary>Isn't H5 the same as H2?</summary><div class="a">
+      <p>They overlap but answer different questions. H2 asks whether each disease is seasonal and in which month it
+        peaks. H5 asks how much higher overall reporting is during the monsoon, as a size of effect (2.3×, d = 1.9), and
+        compares a parametric with a non-parametric test.</p></div></details>
+  </div>
+
+  <div class="qgroup"><h3>Modeling</h3>
+    <details class="qa"><summary>What exactly does your model predict?</summary><div class="a">
+      <p>Whether a given district will report an outbreak (of a given transmission group) in a given month: a binary
+        classification on a district × month grid.</p></div></details>
+    <details class="qa"><summary>The data only has outbreaks. Where did the negative examples come from?</summary><div class="a">
+      <p>We built a full grid of every district and every month and marked cells with no record as 0. That assumes no
+        record means no outbreak, although it could mean the district didn't report. We state this as a key limitation.</p></div></details>
+    <details class="qa"><summary>Why did you split by time instead of randomly?</summary><div class="a">
+      <p>A random split leaks future information into training: the model could learn from 2019 to predict 2018. Real
+        use means predicting forward, so we trained on 2009–2017, tuned on 2018 and tested on 2019.</p></div></details>
+    <details class="qa"><summary>What is data leakage, and how did you prevent it?</summary><div class="a">
+      <p>Leakage is when information unavailable at prediction time sneaks into training, giving falsely good scores. We
+        prevented it with a time-based split, history features that only use earlier months, filling missing climate
+        from training years only, and choosing districts from the training period only.</p></div></details>
+    <details class="qa"><summary>Why not accuracy?</summary><div class="a">
+      <p>About 95% of district-months have no outbreak, so predicting "no" every time scores ~95% accuracy while being
+        useless. PR-AUC focuses on how well we find the rare positives.</p></div></details>
+    <details class="qa"><summary>What does PR-AUC = 0.185 mean? Is that bad?</summary><div class="a">
+      <p>It's the area under the precision-recall curve (average precision). A random model scores the positive rate,
+        0.043 for <em>Aedes</em>, so 0.185 is about 4.3× better than random. In absolute terms it's modest: at the chosen
+        threshold, about 1 in 4 alerts is real. That's typical for surveillance data, which is noisy and sparse.</p></div></details>
+    <details class="qa"><summary>ROC-AUC vs PR-AUC?</summary><div class="a">
+      <p>ROC-AUC is the probability a random positive is ranked above a random negative (random = 0.5). With heavy class
+        imbalance it can look flattering because the many easy negatives inflate it. PR-AUC ignores true negatives and
+        focuses on the positives, so it's more informative for rare events.</p></div></details>
+    <details class="qa"><summary>Interpret your confusion matrix.</summary><div class="a">
+      <p><em>Aedes</em>, 2019: caught 36 of 162 outbreaks (recall 22%), with 106 false alarms (precision 25%), 126 missed,
+        3,512 correct "no" predictions. That's at the F1-optimal threshold; lowering it catches more outbreaks (≈80% at
+        ~8% precision) at the cost of more false alarms. For health officials, missing outbreaks is usually worse.</p></div></details>
+    <details class="qa"><summary>How did you choose the threshold?</summary><div class="a">
+      <p>On the 2018 validation year, we picked the threshold that maximized F1. It's a choice; in practice it should
+        reflect the relative costs of missed outbreaks and false alarms.</p></div></details>
+    <details class="qa"><summary>Why compare against a no-climate model?</summary><div class="a">
+      <p>It's an ablation: the only way to know what climate adds. A good overall score could come entirely from season
+        and district history. The comparison isolates climate's contribution.</p></div></details>
+    <details class="qa"><summary>H1 found strong rain–outbreak correlations. Why didn't climate improve the model?</summary><div class="a">
+      <p>Regional monthly rainfall mostly encodes the seasonal cycle, which the month feature and district history
+        already capture. Feature importance shows this: when rainfall is added, the month feature drops to near zero.
+        The model uses rainfall <em>instead of</em> month, as a seasonal clock, not as extra information. So climate and
+        outbreaks move together, but at this resolution climate adds nothing beyond "what month is it".</p></div></details>
+    <details class="qa"><summary>Explain logistic regression.</summary><div class="a">
+      <p>It models the log-odds of an outbreak as a weighted sum of features and converts it to a probability with the
+        sigmoid, 1/(1 + e^−z). Coefficients are learned by maximizing likelihood, with L2 regularization controlled by C.
+        Interpretable, but only linear effects.</p></div></details>
+    <details class="qa"><summary>Explain gradient boosting.</summary><div class="a">
+      <p>An ensemble of small decision trees built sequentially; each new tree corrects the errors of the ones before it.
+        Predictions are the sum of all trees, scaled by the learning rate. It captures non-linear effects and
+        interactions. We used <code>HistGradientBoostingClassifier</code>, which bins features for speed and handles
+        missing values natively.</p></div></details>
+    <details class="qa"><summary>Logistic regression and gradient boosting scored about the same. What does that tell you?</summary><div class="a">
+      <p>The relationships in our features are mostly simple; non-linear modeling didn't find extra structure. The limit
+        is the information in the features, not the model's flexibility.</p></div></details>
+    <details class="qa"><summary>How did you tune hyperparameters?</summary><div class="a">
+      <p>Grid search: train on 2009–2017 with each setting, score PR-AUC on 2018, keep the best. Then refit with those
+        settings on 2009–2018 (more data) and evaluate once on 2019. The test set was never used for choices.</p></div></details>
+    <details class="qa"><summary>What is permutation importance?</summary><div class="a">
+      <p>Shuffle one feature's values in the test set and measure how much PR-AUC drops. A big drop means the model relies
+        on that feature. Negative or near-zero values mean it doesn't help (negatives are just noise). Correlated features
+        can share importance.</p></div></details>
+    <details class="qa"><summary>Why split models by transmission route?</summary><div class="a">
+      <p>H1 and H4 showed diseases respond to rain with different lags and occur in different regions. The any-disease
+        model was mostly ADD (57% of records) and mixed opposite patterns. Grouping by mechanism (waterborne, <em>Aedes</em>,
+        <em>Anopheles</em>) is biologically meaningful, and the models then picked the matching rainfall lag.</p></div></details>
+    <details class="qa"><summary>Why separate <em>Aedes</em> and <em>Anopheles</em>? Aren't both mosquitoes?</summary><div class="a">
+      <p>Different mosquitoes with different ecology. <em>Aedes</em> (Dengue, Chikungunya) breeds in small containers near
+        homes, and is mostly urban, South and West. <em>Anopheles</em> (Malaria) is more rural and is concentrated in
+        Central India and the Northeast. In H1 Malaria didn't share the clean lag-1 pattern.</p></div></details>
+    <details class="qa"><summary>Why exclude AES?</summary><div class="a">
+      <p>Acute Encephalitis Syndrome is a syndrome with many causes (Japanese encephalitis, which is mosquito-borne, but
+        also others), so it doesn't fit one transmission route. It also has only 111 records.</p></div></details>
+    <details class="qa"><summary>Can we trust the <em>Anopheles</em> model?</summary><div class="a">
+      <p>Not much. Malaria reporting thinned after 2016, leaving only 10 validation and 18 test positives. One or two lucky
+        hits move PR-AUC a lot. We present it as suggestive only.</p></div></details>
+    <details class="qa"><summary>What does the stress test show?</summary><div class="a">
+      <p>On 2020–22 the base rate fell (2.6% for any disease), so PR-AUC fell too, but lift over random stayed ~4.7× and
+        ROC-AUC held. The model still ranks districts well under the COVID-era shift; its absolute probabilities are too
+        high because it was trained when outbreaks were more common.</p></div></details>
+    <details class="qa"><summary>How would you improve the model?</summary><div class="a">
+      <ul><li>District-level rainfall from IMD gridded data or CHIRPS (the biggest potential gain for climate).</li>
+        <li>Outbreaks in neighbouring districts last month (spatial spread).</li>
+        <li>Population per district.</li>
+        <li>Weekly resolution with lagged features; bootstrap confidence intervals on metrics.</li></ul></div></details>
+  </div>
+
+  <div class="qgroup"><h3>Deployment, process &amp; general</h3>
+    <details class="qa"><summary>How is the project deployed?</summary><div class="a">
+      <p>A static report website (HTML + plot images) in the repo's <code>docs/</code> folder, served by GitHub Pages
+        from the main branch. Every push updates it. The analysis itself is reproducible Python scripts.</p></div></details>
+    <details class="qa"><summary>How can someone reproduce your results?</summary><div class="a">
+      <p><code>pip install -r requirements.txt</code>, then run the numbered scripts in <code>scripts/</code> in order from
+        the repo root: 01–03 prepare data, 04–19 EDA, 20–24 hypothesis tests, 25–28 models. Derived files are regenerated,
+        not committed.</p></div></details>
+    <details class="qa"><summary>What was the hardest part?</summary><div class="a">
+      <p>Good answers: realising case totals were misleading and switching to outbreak counts; building "no outbreak"
+        rows that the data doesn't contain; and keeping the model free of leakage with past-only features and a
+        time-based split.</p></div></details>
+    <details class="qa"><summary>What would you do differently?</summary><div class="a">
+      <p>Get district-level climate and population data from the start; check week/date alignment and duplicates
+        earlier; and plan the hypotheses before doing EDA, to avoid testing patterns found in the same data.</p></div></details>
+    <details class="qa"><summary>How did you use AI (Claude Code) in this project?</summary><div class="a">
+      <p>Be honest and specific. Claude helped write scripts, suggested statistical approaches and explained results.
+        <strong>Decisions you made</strong>: choosing which hypotheses to test (and the course's 7 tests), choosing
+        "any disease" and region-level climate for the first model, questioning whether a combined model made sense and
+        proposing the waterborne / mosquito split, separating <em>Aedes</em> from <em>Anopheles</em>, dropping the Dengue-only
+        model, and pushing back on weak results. Show you understand every result on this page.</p></div></details>
+  </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="numbers">
+  <h2>11. Numbers to remember</h2>
+  <div class="stats">
+    <div class="stat"><div class="num">~9,000</div><div class="label">outbreak records (8,984)</div></div>
+    <div class="stat"><div class="num">May 09 – Jun 22</div><div class="label">158 months</div></div>
+    <div class="stat"><div class="num">764</div><div class="label">districts</div></div>
+    <div class="stat"><div class="num">57%</div><div class="label">of records are ADD</div></div>
+    <div class="stat"><div class="num">51,225</div><div class="label">cases in the 2009 Cholera outlier</div></div>
+    <div class="stat"><div class="num">151</div><div class="label">records in 2020 (COVID)</div></div>
+    <div class="stat"><div class="num">0.58 / 0.52</div><div class="label">ADD lag-0 r / Dengue lag-1 r</div></div>
+    <div class="stat"><div class="num">Jun–Sep</div><div class="label">every disease's peak (H2)</div></div>
+    <div class="stat"><div class="num">ε² 0.019</div><div class="label">H3: temperature ~2% of variation</div></div>
+    <div class="stat"><div class="num">V 0.18</div><div class="label">H4 disease × region</div></div>
+    <div class="stat"><div class="num">2.3× · d 1.9</div><div class="label">H5 monsoon vs other months</div></div>
+    <div class="stat"><div class="num">5.5%</div><div class="label">district-months with an outbreak</div></div>
+    <div class="stat"><div class="num">0.185 vs 0.043</div><div class="label"><em>Aedes</em> PR-AUC vs random</div></div>
+    <div class="stat"><div class="num">36 / 162</div><div class="label"><em>Aedes</em> outbreaks caught (2019)</div></div>
+    <div class="stat"><div class="num">≤ 0.004</div><div class="label">PR-AUC gain from climate</div></div>
+  </div>
+  <p class="muted">Sources: <code>EDA_FINDINGS.md</code> and <code>spec.md</code> in the repository, where every number above is recorded.</p>
+</section>
+</main>
+</div>
+
+<button class="theme-toggle" type="button" id="theme">Toggle theme</button>
+<script>
+  (function () {
+    var qas = Array.prototype.slice.call(document.querySelectorAll("details.qa"));
+    document.getElementById("openAll").onclick = function () { qas.forEach(function (d) { d.open = true; }); };
+    document.getElementById("closeAll").onclick = function () { qas.forEach(function (d) { d.open = false; }); };
+    var search = document.getElementById("qsearch");
+    search.addEventListener("input", function () {
+      var q = search.value.trim().toLowerCase();
+      qas.forEach(function (d) {
+        d.classList.toggle("hidden", q !== "" && d.textContent.toLowerCase().indexOf(q) === -1);
+      });
+      document.querySelectorAll(".qgroup").forEach(function (g) {
+        var visible = g.querySelectorAll("details.qa:not(.hidden)").length > 0;
+        g.classList.toggle("hidden", !visible);
+      });
+    });
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem("theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+    document.getElementById("theme").onclick = function () {
+      var cur = root.getAttribute("data-theme") ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      var next = cur === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("theme", next); } catch (e) {}
+    };
+  })();
+</script>
+</body>
+</html>

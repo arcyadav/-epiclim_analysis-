@@ -223,7 +223,8 @@ too few to judge.
 - [ ] Final model + evaluation
 - [ ] Writeup / presentation
 - [x] Deployment (viva requirement): static report site in `docs/`, served by GitHub Pages
-- [x] Transcript HTML (viva requirement): `transcript.html`, generated from `/export transcript.md` by `tools/transcript_to_html.py`
+- [x] Transcript HTML (viva requirement): `docs/transcript.html`, generated from `/export transcript.md` by `tools/transcript_to_html.py`
+- [x] Viva prep page (viva requirement): `docs/viva_prep.html`
 - *(Exact deliverable format depends on course requirements — TBD)*
 
 ---
@@ -263,3 +264,4 @@ too few to judge.
 | 2026-09-28 | Housekeeping: corrected the time span to May 2009 – June 2022; fixed EDA #11, which had grouped Cholera with the vector-borne diseases (it's waterborne); `.gitignore` now ignores all derived `data/*.csv`/`*.png`/`*.md` except the raw dataset; added `requirements.txt` (pandas, numpy, matplotlib, scikit-learn, scipy). |
 | 2026-10-26 | Viva requires every project to be deployed: added a static report website in `docs/` (`index.html` plus copies of all 15 plots in `docs/img/`) for GitHub Pages. Repo to be made public for Pages. |
 | 2026-10-26 | Repo made public and GitHub Pages enabled: site live at https://arcyadav.github.io/-epiclim_analysis-/. Exported this session's transcript and converted it to `transcript.html` (Turn 1–34, responses collapsed) with `tools/transcript_to_html.py`; the 19 Sep sessions weren't saved, which a note on the page explains. |
+| 2026-10-27 | Viva submission takes URLs only: moved `transcript.html` into `docs/` and added `docs/viva_prep.html` (study guide: project story, data decisions, theory of all 7 tests and both model types, results, limitations, 59 Q&As), both linked from the project page. |

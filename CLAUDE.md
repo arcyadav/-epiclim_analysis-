@@ -66,6 +66,10 @@ previous step's output:
    findings (numbers copied from `EDA_FINDINGS.md`), and `docs/img/` holds
    copies of the plot PNGs from `data/` — committed, unlike `data/*.png`.
    If a plot or result changes, re-copy the PNG and update the page text.
+   `docs/transcript.html` (session transcript, generated from `transcript.md`
+   by `python tools/transcript_to_html.py transcript.md docs/transcript.html
+   "<title>" "<note>"`) and `docs/viva_prep.html` (hand-written viva study
+   guide) are also served from here, since the viva submission takes URLs.
 
 Numbering has gaps (e.g. 11, 12, 15 are missing) — some exploratory scripts
 were tried and deliberately deleted after review; this is expected, not a
